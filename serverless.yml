@@ -1,0 +1,157 @@
+service: sentinelwatch
+
+package:
+  individually: true
+  excludeDevDependencies: true
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  memorySize: 256
+  region: eu-central-1
+  stage: dev
+
+  # ---------------------------------------------------------------------------
+  # VPC — required if RDS is not publicly accessible.
+  # For a quick dev setup with a publicly accessible RDS, leave this commented.
+  # For production, uncomment and fill in one subnet + the Lambda SG.
+  # ---------------------------------------------------------------------------
+  # vpc:
+  #   securityGroupIds:
+  #     - sg-xxxxxxxxxxxxxxxxx   # sentinelwatch-lambda-sg
+  #   subnetIds:
+  #     - subnet-xxxxxxxxxxxxxxxxx
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource:
+        - "Fn::Join":
+            - ":"
+            - - "arn:aws:logs"
+              - Ref: "AWS::Region"
+              - Ref: "AWS::AccountId"
+              - "log-group:/aws/lambda/*:*:*"
+    - Effect: Allow
+      Action:
+        - lambda:InvokeFunction
+      Resource: "*"
+
+  environment:
+    stage: ${self:custom.stage}
+    DATABASE_URL: ${env:DATABASE_URL}
+    DB_SSL: ${env:DB_SSL, "true"}
+    ETHEREUM_RPC_URL: ${env:ETHEREUM_RPC_URL, ""}
+    BINANCE_RPC_URL: ${env:BINANCE_RPC_URL, ""}
+    AVALANCHE_RPC_URL: ${env:AVALANCHE_RPC_URL, ""}
+    ARBITRUM_RPC_URL: ${env:ARBITRUM_RPC_URL, ""}
+    BASE_RPC_URL: ${env:BASE_RPC_URL, ""}
+    OPTIMISM_RPC_URL: ${env:OPTIMISM_RPC_URL, ""}
+    POLYGON_RPC_URL: ${env:POLYGON_RPC_URL, ""}
+    SONIC_RPC_URL: ${env:SONIC_RPC_URL, ""}
+    GNOSIS_RPC_URL: ${env:GNOSIS_RPC_URL, ""}
+    LINEA_RPC_URL: ${env:LINEA_RPC_URL, ""}
+    CELO_RPC_URL: ${env:CELO_RPC_URL, ""}
+    UNICHAIN_RPC_URL: ${env:UNICHAIN_RPC_URL, ""}
+    MONAD_RPC_URL: ${env:MONAD_RPC_URL, ""}
+
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  esbuild:
+    bundle: true
+    minify: false
+    concurrency: 4
+  prune:
+    automatic: true
+    number: 5
+
+functions:
+  # ---------------------------------------------------------------------------
+  # Fallback — catch-all for unmatched routes
+  # ---------------------------------------------------------------------------
+  fallback:
+    handler: src/fallback.default
+    events:
+      - http:
+          path: /{params+}
+          method: any
+
+  # ---------------------------------------------------------------------------
+  # API — read endpoints
+  # ---------------------------------------------------------------------------
+  allocationChart:
+    handler: src/getAllocationChart.default
+    timeout: 60
+    memorySize: 1024
+    events:
+      - http:
+          path: allocationchart
+          method: get
+
+  allocationPrices:
+    handler: src/getAllocationPrices.default
+    timeout: 60
+    memorySize: 512
+    events:
+      - http:
+          path: allocationprices
+          method: get
+
+  config:
+    handler: src/config.default
+    timeout: 30
+    memorySize: 256
+    events:
+      - http:
+          path: config
+          method: get
+
+  # ---------------------------------------------------------------------------
+  # Cron jobs — write / ingest data
+  # ---------------------------------------------------------------------------
+  storeAllocationBalances:
+    handler: src/storeAllocationBalances.default
+    timeout: 900
+    memorySize: 1024
+    events:
+      - schedule: cron(40 * * * ? *) # :40 past every hour
+
+  storeAllocationPrices:
+    handler: src/storeAllocationPrices.default
+    timeout: 120
+    memorySize: 512
+    events:
+      - schedule: cron(15 * * * ? *) # :15 past every hour
+
+resources:
+  # CORS headers on API Gateway error responses (4xx / 5xx)
+  - Resources:
+      GatewayResponseDefault4XX:
+        Type: AWS::ApiGateway::GatewayResponse
+        Properties:
+          ResponseParameters:
+            gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+            gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+          ResponseType: DEFAULT_4XX
+          RestApiId: !Ref ApiGatewayRestApi
+      GatewayResponseDefault5XX:
+        Type: AWS::ApiGateway::GatewayResponse
+        Properties:
+          ResponseParameters:
+            gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+            gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+          ResponseType: DEFAULT_5XX
+          RestApiId: !Ref ApiGatewayRestApi
+
+  # ---------------------------------------------------------------------------
+  # Production only — uncomment when you have a domain set up.
+  # Requires: custom.domain, custom.hostedZone, custom.certificateArn
+  # ---------------------------------------------------------------------------
+  # - ${file(resources/api-cloudfront-distribution.yml)}
+
+plugins:
+  - serverless-esbuild
+  - serverless-prune-plugin

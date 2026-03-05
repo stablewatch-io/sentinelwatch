@@ -1,0 +1,51 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run database migrations
+        run: pnpm migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Deploy to AWS
+        run: pnpm sls deploy --stage prod
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION:            eu-central-1
+          DATABASE_URL:          ${{ secrets.DATABASE_URL }}
+          DB_SSL:                ${{ secrets.DB_SSL }}
+          ETHEREUM_RPC_URL:      ${{ secrets.ETHEREUM_RPC_URL }}
+          AVALANCHE_RPC_URL:     ${{ secrets.AVALANCHE_RPC_URL }}
+          BASE_RPC_URL:          ${{ secrets.BASE_RPC_URL }}
+          OPTIMISM_RPC_URL:      ${{ secrets.OPTIMISM_RPC_URL }}
+          ARBITRUM_RPC_URL:      ${{ secrets.ARBITRUM_RPC_URL }}
+          UNICHAIN_RPC_URL:      ${{ secrets.UNICHAIN_RPC_URL }}
+          POLYGON_RPC_URL:       ${{ secrets.POLYGON_RPC_URL }}
+          SONIC_RPC_URL:         ${{ secrets.SONIC_RPC_URL }}
+          GNOSIS_RPC_URL:        ${{ secrets.GNOSIS_RPC_URL }}
+          LINEA_RPC_URL:         ${{ secrets.LINEA_RPC_URL }}
+          CELO_RPC_URL:          ${{ secrets.CELO_RPC_URL }}
+          BINANCE_RPC_URL:       ${{ secrets.BINANCE_RPC_URL }}
