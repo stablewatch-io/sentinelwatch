@@ -126,7 +126,7 @@ functions:
     timeout: 900
     memorySize: 1024
     events:
-      - schedule: cron(40 * * * ? *) # :40 past every hour
+      - schedule: cron(10 * * * ? *) # :10 past every hour
 
   storeAllocationPrices:
     handler: src/storeAllocationPrices.default

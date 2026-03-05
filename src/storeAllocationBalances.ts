@@ -6,7 +6,7 @@
  *   2. Writes the result to the hourly time-series table in RDS
  *   3. Reconciles / promotes a daily record if none exists yet for today
  *
- * Scheduled: cron(40 * * * ? *)  — i.e. at :40 past every hour
+ * Scheduled: cron(10 * * * ? *)  — i.e. at :10 past every hour
  */
 
 import { getCurrentUnixTimestamp } from "./utils/date";
