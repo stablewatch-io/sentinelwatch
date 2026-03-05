@@ -73,8 +73,7 @@ export async function fetchMorphoVaultPrice(
 
   // Vault token price = share price (normalized) × underlying price
   // sharePrice is WAD-scaled (10^18 = 1.0), so divide by WAD to get the multiplier
-  const vaultTokenPrice = (Number(sharePrice) / Number(WAD)) * underlyingPrice;
-
-  return vaultTokenPrice;
+  const shareMultiplier = Number(sharePrice) / Number(WAD);
+  return shareMultiplier * underlyingPrice;
 }
 

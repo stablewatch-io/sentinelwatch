@@ -48,6 +48,7 @@ export type AllocationConfig = {
   isLP?: boolean | null;
   /** True if some portion sits idle (not deployed). */
   containsIdle?: boolean | null;
+  market?: string | null;
   /** If true, skip this allocation in all cron jobs. */
   skip?: boolean | null;
 };

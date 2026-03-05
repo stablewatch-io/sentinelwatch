@@ -27,9 +27,13 @@ const customAdapters: Record<string, BalanceFetcher> = {
   anchorage: fetchAnchorageBalance,
 };
 
-export async function fetchBalance(allocation: ActiveAllocation): Promise<string> {
-  // Custom module takes priority.
+export async function fetchAllocationBalance(allocation: ActiveAllocation): Promise<string> {
+  let adapterName: string;
+  let adapterFn: BalanceFetcher;
+
+  // Determine which adapter to use
   if (allocation.module) {
+    adapterName = `custom:${allocation.module}`;
     const adapter = customAdapters[allocation.module];
     if (!adapter) {
       throw new Error(
@@ -38,18 +42,25 @@ export async function fetchBalance(allocation: ActiveAllocation): Promise<string
         `Add it to src/adapters/index.ts.`
       );
     }
-    return adapter(allocation);
-  }
-
-  // Default: read balanceOf(holdingWallet) on-chain.
-  if (allocation.holdingWallet) {
-    return fetchErc20Balance(
-      allocation as ActiveAllocation & { holdingWallet: string }
+    adapterFn = adapter;
+  } else if (allocation.holdingWallet) {
+    adapterName = "erc20Balance";
+    adapterFn = fetchErc20Balance as BalanceFetcher;
+  } else {
+    throw new Error(
+      `Allocation "${allocation.id}" has neither a holdingWallet nor a module — ` +
+      `cannot determine which adapter to use.`
     );
   }
 
-  throw new Error(
-    `Allocation "${allocation.id}" has neither a holdingWallet nor a module — ` +
-    `cannot determine which adapter to use.`
-  );
+  // Centralized logging and error handling
+  console.log(`[${allocation.id}] fetching balance using ${adapterName}`);
+  try {
+    const balance = await adapterFn(allocation as any);
+    console.log(`[${allocation.id}] balance=${balance}`);
+    return balance;
+  } catch (err) {
+    console.error(`[${allocation.id}] ${adapterName} failed:`, err);
+    throw err;
+  }
 }

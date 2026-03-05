@@ -18,7 +18,7 @@ import {
 import storeNewAllocationBalances from "./peggedAssets/storePeggedAssets/storeNewPeggedBalances";
 import allocations from "./allocationData/allocations";
 import { isActiveAllocation } from "./allocationData/types";
-import { fetchBalance } from "./adapters/index";
+import { fetchAllocationBalance } from "./adapters/index";
 
 const FETCH_TIMEOUT_MS = 30_000; // 30 s per allocation
 
@@ -49,13 +49,12 @@ const handler = async (_event: any): Promise<void> => {
       let balance: string;
       try {
         balance = await withTimeout(
-          fetchBalance(allocation),
+          fetchAllocationBalance(allocation),
           FETCH_TIMEOUT_MS,
           allocation.id
         );
-        console.log(`[${allocation.id}] balance = ${balance}`);
       } catch (err) {
-        console.error(`[${allocation.id}] Failed to fetch balance:`, err);
+        console.error(`[${allocation.id}] Failed to fetch balance (timeout or error):`, err);
         return;
       }
 

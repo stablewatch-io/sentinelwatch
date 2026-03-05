@@ -36,6 +36,7 @@ export async function getCustomPrices(
       const adapter = priceAdapters[id];
       if (!adapter || adapter.type === "morphoVault") return;
 
+      console.log(`getCustomPrices [${id}]: fetching price using ${adapter.type}`);
       try {
         if (adapter.type === "chainlinkFeed") {
           result[id] = await fetchChainlinkFeedPrice(
@@ -57,9 +58,9 @@ export async function getCustomPrices(
         } else if (adapter.type === "hardcoded") {
           result[id] = adapter.price;
         }
-        console.log(`getCustomPrices [${id}]: ${result[id]}`);
+        console.log(`getCustomPrices [${id}]: price=${result[id]}`);
       } catch (err) {
-        console.error(`getCustomPrices: failed to fetch price for ${id}:`, err);
+        console.error(`getCustomPrices [${id}]: ${adapter.type} failed:`, err);
       }
     })
   );
@@ -70,15 +71,16 @@ export async function getCustomPrices(
       const adapter = priceAdapters[id];
       if (!adapter || adapter.type !== "morphoVault") return;
 
+      console.log(`getCustomPrices [${id}]: fetching price using ${adapter.type}`);
       try {
         result[id] = await fetchMorphoVaultPrice(
           adapter.chain,
           adapter.vaultAddress,
           result // Pass the accumulated price map
         );
-        console.log(`getCustomPrices [${id}]: ${result[id]}`);
+        console.log(`getCustomPrices [${id}]: price=${result[id]}`);
       } catch (err) {
-        console.error(`getCustomPrices: failed to fetch price for ${id}:`, err);
+        console.error(`getCustomPrices [${id}]: ${adapter.type} failed:`, err);
       }
     })
   );

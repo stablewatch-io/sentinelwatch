@@ -70,6 +70,16 @@ const handler = async (_event: any): Promise<void> => {
   const priceCount = Object.keys(prices).length;
   console.log(`storeAllocationPrices: total prices resolved: ${priceCount}`);
 
+  // Log each individual token price (including 0 prices)
+  for (const tokenId of uniqueTokenIds) {
+    const price = prices[tokenId];
+    if (price !== undefined) {
+      console.log(`storeAllocationPrices: [${tokenId}] = ${price}`);
+    } else {
+      console.warn(`storeAllocationPrices: [${tokenId}] = MISSING`);
+    }
+  }
+
   // ----- Write hourly record -----
   await db.put({
     PK: hourlyAllocationPrices,
