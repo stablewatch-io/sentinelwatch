@@ -19,6 +19,7 @@ import { ethers } from "ethers";
 import type { ActiveAllocation } from "../../allocationData/types";
 import { getProvider } from "../../utils/providers";
 import { tokens as tokenRegistry } from "../../allocationData/tokens";
+import { getPrices } from "../../utils/getPrices";
 
 const NFT_POSITION_MANAGER_ABI = [
   "function balanceOf(address owner) external view returns (uint256)",
@@ -212,10 +213,8 @@ export async function fetchBalance(allocation: ActiveAllocation): Promise<string
     token1Meta.decimals != null ? Promise.resolve(token1Meta.decimals) : token1Contract.decimals(),
   ]);
 
-  // Fetch prices from DefiLlama (this is a simplified approach - in production
-  // you'd want to pass prices in or fetch from the pricing pipeline)
-  const { default: getTokenPrices } = await import("../../utils/fetchTokenPrices");
-  const prices = await getTokenPrices([allocation.token0, allocation.token1]);
+  // Fetch prices from DefiLlama
+  const prices = await getPrices([allocation.token0, allocation.token1]);
   const price0 = prices[allocation.token0] ?? 0;
   const price1 = prices[allocation.token1] ?? 0;
 
