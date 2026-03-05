@@ -27,6 +27,7 @@ import {
   dailyAllocationPrices,
 } from "./peggedAssets/utils/getLastRecord";
 import { getPrices } from "./utils/getPrices";
+import { getCustomPrices } from "./adapters/prices";
 import allocations from "./allocationData/allocations";
 import { isActiveAllocation } from "./allocationData/types";
 
@@ -47,10 +48,27 @@ const handler = async (_event: any): Promise<void> => {
   );
 
   // ----- Fetch prices from DefiLlama -----
-  const prices = await getPrices(uniqueTokenIds);
+  const llamaPrices = await getPrices(uniqueTokenIds);
+
+  const llamaCount = Object.keys(llamaPrices).length;
+  console.log(`storeAllocationPrices: DefiLlama returned ${llamaCount} price(s)`);
+
+  // ----- Fill missing prices via custom adapters (Chronicle, Redstone, Morpho vaults, hardcoded) -----
+  const missingIds = uniqueTokenIds.filter((id) => llamaPrices[id] == null);
+  const customPrices =
+    missingIds.length > 0 ? await getCustomPrices(missingIds, llamaPrices) : {};
+
+  if (missingIds.length > 0) {
+    console.log(
+      `storeAllocationPrices: custom adapters resolved ${Object.keys(customPrices).length}` +
+      ` of ${missingIds.length} missing price(s)`
+    );
+  }
+
+  const prices = { ...llamaPrices, ...customPrices };
 
   const priceCount = Object.keys(prices).length;
-  console.log(`storeAllocationPrices: received ${priceCount} price(s)`);
+  console.log(`storeAllocationPrices: total prices resolved: ${priceCount}`);
 
   // ----- Write hourly record -----
   await db.put({

@@ -53,4 +53,3 @@ export async function fetchBalance(allocation: ActiveAllocation): Promise<string
     `cannot determine which adapter to use.`
   );
 }
-

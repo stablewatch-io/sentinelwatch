@@ -12,6 +12,7 @@
  * Route: GET /allocationprices
  */
 
+import type { APIGatewayEvent } from "aws-lambda";
 import { successResponse, wrap, IResponse } from "./utils/shared";
 import { getHistoricalValues } from "./utils/shared/db";
 import {
@@ -54,7 +55,7 @@ export async function craftAllocationPricesResponse() {
 }
 
 const handler = async (
-  _event: AWSLambda.APIGatewayEvent
+  _event: APIGatewayEvent
 ): Promise<IResponse> => {
   const data = await craftAllocationPricesResponse();
   return successResponse(data, 30 * 60); // 30-min browser cache

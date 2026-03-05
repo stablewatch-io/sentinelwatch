@@ -1,0 +1,80 @@
+/**
+ * morphoVaultPrice — MetaMorpho vault token pricer (V1 & V2)
+ *
+ * Prices MetaMorpho vault tokens by querying the vault's share price and
+ * multiplying by the underlying asset's USD price.
+ *
+ * MetaMorpho vaults are ERC-4626 compliant — vault tokens are shares that
+ * appreciate as yield accrues. Both V1 and V2 use the same interface.
+ *
+ * Steps:
+ *  1. Call convertToAssets(10^18) to get the current share price (assets per share, WAD-scaled)
+ *  2. Call asset() to discover the underlying token address
+ *  3. Look up the underlying token's USD price (from the prices map passed in)
+ *  4. Calculate: vaultTokenPrice = (sharePrice / 10^18) × underlyingPrice
+ *
+ * Why convertToAssets instead of totalAssets / totalSupply:
+ *   The spec warns that totalAssets() is dynamic and queries Morpho Blue markets
+ *   live, causing it to "run ahead" of totalSupply between fee accruals. This
+ *   creates false dips in the share price at fee-share mints. convertToAssets(10^18)
+ *   handles consistency and virtual offsets correctly.
+ *
+ * ref: docs/morpho_spec.md §Share-Based Accounting (ERC-4626)
+ * ref: docs/morpho_spec.md §APY Calculation from Events (Method 1 warning)
+ */
+
+import { ethers } from "ethers";
+import { getProvider } from "../../utils/providers";
+import type { PriceMap } from "./index";
+import { tokens as tokenRegistry } from "../../allocationData/tokens";
+
+const VAULT_ABI = [
+  "function convertToAssets(uint256 shares) view returns (uint256)",
+  "function asset() view returns (address)",
+  "function decimals() view returns (uint8)",
+];
+
+const WAD = 10n ** 18n;
+
+/**
+ * Returns the current USD price of a MetaMorpho vault token.
+ *
+ * @param chain          Canonical chain name matching keys in src/utils/rpcs.ts.
+ * @param vaultAddress   The MetaMorpho vault contract address.
+ * @param prices         Price map containing underlying token prices (from DefiLlama + custom adapters).
+ *                       The underlying asset price must already be in this map.
+ */
+export async function fetchMorphoVaultPrice(
+  chain: string,
+  vaultAddress: string,
+  prices: PriceMap
+): Promise<number> {
+  const provider = getProvider(chain);
+  const vault = new ethers.Contract(vaultAddress, VAULT_ABI, provider);
+
+  // Query vault for underlying asset and share price
+  const [underlyingAddress, sharePrice]: [string, bigint] = await Promise.all([
+    vault.asset(),
+    vault.convertToAssets(WAD), // assets per 1 share (WAD-scaled)
+  ]);
+
+  // Build the token ID for price lookup: "chain:address"
+  const underlyingTokenId = `${chain}:${underlyingAddress.toLowerCase()}`;
+
+  // Look up underlying token price
+  const underlyingPrice = prices[underlyingTokenId];
+  if (underlyingPrice == null) {
+    throw new Error(
+      `Underlying token price not found for Morpho vault ${vaultAddress}. ` +
+        `Underlying token: ${underlyingTokenId}. ` +
+        `Ensure the underlying token is priced before the vault token in the adapter order.`
+    );
+  }
+
+  // Vault token price = share price (normalized) × underlying price
+  // sharePrice is WAD-scaled (10^18 = 1.0), so divide by WAD to get the multiplier
+  const vaultTokenPrice = (Number(sharePrice) / Number(WAD)) * underlyingPrice;
+
+  return vaultTokenPrice;
+}
+
