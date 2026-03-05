@@ -100,6 +100,15 @@ functions:
           path: allocationprices
           method: get
 
+  latestPrices:
+    handler: src/getLatestPrices.default
+    timeout: 15
+    memorySize: 256
+    events:
+      - http:
+          path: latestprices
+          method: get
+
   config:
     handler: src/config.default
     timeout: 30
