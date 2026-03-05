@@ -46,7 +46,7 @@ const handler = async (_event: any): Promise<void> => {
 
   await Promise.all(
     active.map(async (allocation) => {
-      let balance: number;
+      let balance: string;
       try {
         balance = await withTimeout(
           fetchErc20Balance(allocation),

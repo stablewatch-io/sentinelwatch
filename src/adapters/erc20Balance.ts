@@ -11,7 +11,9 @@
  *   1. Token registry `decimals` field — zero extra RPC calls.
  *   2. On-chain `decimals()` call — one extra RPC call per allocation.
  *
- * Returns the balance as a human-readable number (divided by 10^decimals).
+ * Returns the balance as a full-precision decimal string (e.g. "86639871.842302").
+ * Callers should store this string as-is; only convert to Number when
+ * arithmetic (e.g. × price) is actually required.
  */
 
 import { ethers } from "ethers";
@@ -24,7 +26,7 @@ const ERC20_ABI = [
   "function decimals() view returns (uint8)",
 ];
 
-export async function fetchErc20Balance(allocation: ActiveAllocation): Promise<number> {
+export async function fetchErc20Balance(allocation: ActiveAllocation): Promise<string> {
   const token = tokenRegistry[allocation.underlying];
   if (!token) {
     throw new Error(
@@ -43,5 +45,5 @@ export async function fetchErc20Balance(allocation: ActiveAllocation): Promise<n
 
   const raw: bigint = await contract.balanceOf(allocation.holdingWallet);
 
-  return parseFloat(ethers.formatUnits(raw, decimals));
+  return ethers.formatUnits(raw, decimals);
 }

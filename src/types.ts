@@ -9,8 +9,14 @@ export interface TokenPrices {
 
 /** A single balance reading for a token on a chain. */
 export interface TokenBalance {
-  /** Raw balance (already decimal-adjusted). */
-  balance: number;
+  /**
+   * Decimal-adjusted balance, stored as a full-precision string
+   * (e.g. "86639871.842302") to avoid floating-point loss and JSON
+   * scientific-notation serialisation (e.g. 1e-7).
+   * Legacy DB rows may contain a plain number; always use parseFloat()
+   * when arithmetic is required.
+   */
+  balance: string | number;
 }
 
 /** Balances keyed by chain name. */

@@ -1,17 +1,17 @@
 /**
  * getAllocationChart — API Lambda
  *
- * Returns a daily time-series of allocation balances and USD values.
+ * Returns a daily time-series of allocation USD values.
  *
  * Query parameters:
- *   allocation  (optional) — allocation id to filter; omit for aggregate
+ *   allocation  (optional) — allocation id to filter; omit for all active
  *   startts     (optional) — unix timestamp; exclude entries before this date
  *
  * Response shape (one entry per day):
  *   [{
- *     date:     <unix-ts>,
- *     balances: { [allocationId]: { balance: number } },
- *     totalUSD: number,
+ *     date:        <unix-ts>,
+ *     allocations: { [allocationId]: { usdValue: number } },
+ *     totals:      { [star: string]: number },   // e.g. { "Spark": 1.2e9, "Grove": 4e8 }
  *   }, ...]
  *
  * Route: GET /allocationchart
@@ -100,19 +100,24 @@ export async function craftAllocationChartResponse(
   const priceSKs = dailyPricesHistory.map((r) => r.SK as number);
 
   /**
-   * Look up the price for a given allocation at a specific timestamp.
-   * Prices are keyed as "<blockchain>:<address>" in the stored price map.
+   * Look up the USD price for a token id ("blockchain:address") at a
+   * specific day-start timestamp.  Returns 0 if no price data is available.
    */
-  function getPriceAt(priceKey: string, timestamp: number): number {
+  function getPriceAt(tokenId: string, timestamp: number): number {
     if (dailyPricesHistory.length === 0) return 0;
     const idx = findClosest(priceSKs, timestamp);
-    return (dailyPricesHistory[idx]?.prices?.[priceKey] as number) ?? 0;
+    return (dailyPricesHistory[idx]?.prices?.[tokenId] as number) ?? 0;
   }
 
-  // ----- Aggregate balances per calendar day -----
+  // ----- Aggregate per calendar day -----
   type DayEntry = {
-    balances: Record<string, { balance: number }>;
-    totalUSD: number;
+    /** usdValue per allocation — rounded to cents at write time */
+    allocations: Record<string, { usdValue: number }>;
+    /**
+     * Accumulated unrounded USD per "star" group.
+     * Rounded to cents only when serialised in the final response.
+     */
+    totals: Record<string, number>;
   };
 
   const byDay: Record<number, DayEntry> = {};
@@ -137,24 +142,37 @@ export async function craftAllocationChartResponse(
         }
       }
 
-      // Price key is the underlying token id ("blockchain:address") —
-      // matches exactly what getPrices() stores.
-      const priceKey = isActiveAllocation(allocation) ? allocation.underlying : "";
+      // Price key is the underlying token id ("blockchain:address")
+      const priceKey = isActiveAllocation(allocation)
+        ? allocation.underlying
+        : "";
+
+      const { star } = allocation;
 
       for (const item of history) {
         const daySK = getClosestDayStartTimestamp(item.SK as number);
         if (daySK < startTs) continue;
 
         const priceUSD = priceKey ? getPriceAt(priceKey, daySK) : 0;
+        // balance is stored as a decimal string ("86639871.842302") to preserve
+        // full on-chain precision; convert to number only here for arithmetic.
         const rawBalance =
-          typeof item.balance === "number" ? item.balance : 0;
+          item.balance != null ? Number(item.balance) : 0;
+
+        // Keep full precision for totals accumulation; round per-allocation
+        // value to cents for display.
+        const usdValue = rawBalance * priceUSD;
 
         if (!byDay[daySK]) {
-          byDay[daySK] = { balances: {}, totalUSD: 0 };
+          byDay[daySK] = { allocations: {}, totals: {} };
         }
 
-        byDay[daySK].balances[allocation.id] = { balance: rawBalance };
-        byDay[daySK].totalUSD += rawBalance * priceUSD;
+        byDay[daySK].allocations[allocation.id] = { usdValue: round2(usdValue) };
+
+        if (star) {
+          byDay[daySK].totals[star] =
+            (byDay[daySK].totals[star] ?? 0) + usdValue;
+        }
       }
     })
   );
@@ -164,8 +182,10 @@ export async function craftAllocationChartResponse(
     .sort(([a], [b]) => Number(a) - Number(b))
     .map(([timestamp, entry]) => ({
       date: Number(timestamp),
-      balances: entry.balances,
-      totalUSD: round2(entry.totalUSD),
+      allocations: entry.allocations,
+      totals: Object.fromEntries(
+        Object.entries(entry.totals).map(([s, v]) => [s, round2(v)])
+      ),
     }));
 }
 
@@ -187,4 +207,3 @@ const handler = async (
 };
 
 export default wrap(handler);
-
