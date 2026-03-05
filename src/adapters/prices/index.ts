@@ -10,6 +10,7 @@ import { fetchChainlinkFeedPrice } from "./chainlinkFeedPrice";
 import { fetchErc4626Price } from "./erc4626Price";
 import { fetchAaveOraclePrice } from "./aaveOraclePrice";
 import { fetchMorphoVaultPrice } from "./morphoVaultPrice";
+import { fetchUniswapV3PositionPrice } from "./uniswapV3PositionPrice";
 import { priceAdapters } from "./priceAdapters";
 
 /** Maps "<blockchain>:<address>" → USD price */
@@ -57,6 +58,8 @@ export async function getCustomPrices(
           );
         } else if (adapter.type === "hardcoded") {
           result[id] = adapter.price;
+        } else if (adapter.type === "uniswapV3Position") {
+          result[id] = 1.0;  // Balance adapter returns USD value directly
         }
         console.log(`getCustomPrices [${id}]: price=${result[id]}`);
       } catch (err) {

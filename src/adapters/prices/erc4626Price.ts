@@ -41,10 +41,10 @@ export async function fetchErc4626Price(
   const vault = new ethers.Contract(vaultAddress, ERC4626_ABI, provider);
 
   // Fetch vault state and underlying address in parallel
-  const [totalAssets, totalSupply, shareDecimals, underlyingAddress]: [
+  const [totalAssets, totalSupply, shareDecimalsRaw, underlyingAddress]: [
     bigint,
     bigint,
-    number,
+    bigint,
     string,
   ] = await Promise.all([
     vault.totalAssets(),
@@ -55,13 +55,16 @@ export async function fetchErc4626Price(
 
   if (totalSupply === 0n) return 0;
 
+  // ethers v6 returns uint8 as bigint at runtime — convert explicitly
+  const shareDecimals = Number(shareDecimalsRaw);
+
   // Resolve underlying decimals
   const underlyingContract = new ethers.Contract(
     underlyingAddress,
     ERC20_DECIMALS_ABI,
     provider
   );
-  const underlyingDecimals: number = await underlyingContract.decimals();
+  const underlyingDecimals: number = Number(await underlyingContract.decimals());
 
   const assetsNormalized = Number(totalAssets) / 10 ** underlyingDecimals;
   const supplyNormalized = Number(totalSupply) / 10 ** shareDecimals;

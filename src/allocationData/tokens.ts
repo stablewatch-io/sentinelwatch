@@ -251,4 +251,12 @@ export const tokens: Record<string, Token> = {
     address:    "0xbAFeAd7c60Ea473758ED6c6021505E8BBd7e8E5d",
     decimals:   18,
   },
+  // Synthetic token IDs for Uniswap V3 LP positions (allocation-specific)
+  "ethereum:uniswap-v3-lp-grove-ausd-usdc": {
+    id:         "ethereum:uniswap-v3-lp-grove-ausd-usdc",
+    name:       "Uniswap V3 LP AUSD/USDC (Grove)",
+    blockchain: "ethereum",
+    address:    "0x0000000000000000000000000000000000000000",  // Synthetic - no actual token address
+    decimals:   18,
+  },
 };

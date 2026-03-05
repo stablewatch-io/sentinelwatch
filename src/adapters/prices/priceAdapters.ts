@@ -69,12 +69,21 @@ type HardcodedAdapter = {
   price: number;
 };
 
+type UniswapV3PositionAdapter = {
+  type: "uniswapV3Position";
+  /**
+   * For Uniswap V3 LP positions, the balance adapter calculates the total USD
+   * value directly. This adapter always returns 1.0, so balance × price = USD value.
+   */
+};
+
 export type PriceAdapterConfig =
   | ChainlinkFeedAdapter
   | Erc4626Adapter
   | AaveOracleAdapter
   | MorphoVaultAdapter
-  | HardcodedAdapter;
+  | HardcodedAdapter
+  | UniswapV3PositionAdapter;
 
 /**
  * Custom price adapters for tokens not covered by the DefiLlama API.
@@ -129,11 +138,11 @@ export const priceAdapters: Record<string, PriceAdapterConfig> = {
   },
 
   // ── Anemoy Tokenized Apollo Diversified Credit Fund Token (ACRDX) on Plume ─
-  // oracle: Chronicle push on Plume
+  // oracle: Chronicle push — contract lives on Ethereum (fund NAV is chain-agnostic)
   // ref: prices_oracles_reference.md › grove.centrifuge.plume ACRDX canonical1
   "plume:0x9477724Bb54AD5417de8Baff29e59DF3fB4DA74f": {
     type: "chainlinkFeed",
-    chain: "plume",
+    chain: "ethereum",
     oracleAddress: "0x51cC9463788b870D1e9Bacd111a9bbB2C9820c7e",
   },
 
@@ -273,6 +282,15 @@ export const priceAdapters: Record<string, PriceAdapterConfig> = {
     type: "morphoVault",
     chain: "monad",
     vaultAddress: "0x32841A8511D5c2c5b253f45668780B99139e476D",
+  },
+
+  // ── Uniswap V3 LP Positions ───────────────────────────────────────────────
+  // For Uniswap V3 positions, the balance adapter computes the total USD value
+  // of all matching positions, so price is always 1.0.
+
+  // Uniswap V3 LP AUSD/USDC (Grove) — synthetic token ID
+  "ethereum:uniswap-v3-lp-grove-ausd-usdc": {
+    type: "uniswapV3Position",
   },
 };
 

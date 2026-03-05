@@ -29,3 +29,9 @@ export const hourlyAllocationPrices = "hourlyPrices";
 
 /** One row per day with the USD price snapshot for all tracked assets. */
 export const dailyAllocationPrices = "dailyPrices";
+
+/** Hourly star financials snapshots (debt + rc, one row per hour, all stars). */
+export const hourlyStarFinancials = "hourlyStarFinancials";
+
+/** One row per day with the star financials snapshot. */
+export const dailyStarFinancials = "dailyStarFinancials";

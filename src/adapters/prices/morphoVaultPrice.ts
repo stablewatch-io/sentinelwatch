@@ -25,6 +25,7 @@
 
 import { ethers } from "ethers";
 import { getProvider } from "../../utils/providers";
+import { getPrices } from "../../utils/getPrices";
 import type { PriceMap } from "./index";
 import { tokens as tokenRegistry } from "../../allocationData/tokens";
 
@@ -59,15 +60,21 @@ export async function fetchMorphoVaultPrice(
   ]);
 
   // Build the token ID for price lookup: "chain:address"
+  // The vault's underlying (e.g. USDC, AUSD) is not itself an allocation token,
+  // so it may not have been fetched from DefiLlama yet — fetch on demand if absent.
   const underlyingTokenId = `${chain}:${underlyingAddress.toLowerCase()}`;
 
-  // Look up underlying token price
-  const underlyingPrice = prices[underlyingTokenId];
+  let underlyingPrice = prices[underlyingTokenId];
+  if (underlyingPrice == null) {
+    const fetched = await getPrices([underlyingTokenId]);
+    underlyingPrice = fetched[underlyingTokenId];
+  }
+
   if (underlyingPrice == null) {
     throw new Error(
       `Underlying token price not found for Morpho vault ${vaultAddress}. ` +
         `Underlying token: ${underlyingTokenId}. ` +
-        `Ensure the underlying token is priced before the vault token in the adapter order.`
+        `DefiLlama does not recognise this token — add a custom price adapter for it.`
     );
   }
 

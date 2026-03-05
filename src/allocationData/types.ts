@@ -51,6 +51,22 @@ export type AllocationConfig = {
   market?: string | null;
   /** If true, skip this allocation in all cron jobs. */
   skip?: boolean | null;
+  /**
+   * For Uniswap V3 LP positions: the pool address.
+   */
+  poolAddress?: string | null;
+  /**
+   * For Uniswap V3 LP positions: token0 id in "<blockchain>:<address>" format.
+   */
+  token0?: string | null;
+  /**
+   * For Uniswap V3 LP positions: token1 id in "<blockchain>:<address>" format.
+   */
+  token1?: string | null;
+  /**
+   * For Uniswap V3 LP positions: fee tier (e.g., 3000 = 0.30%).
+   */
+  feeTier?: number | null;
 };
 
 /**

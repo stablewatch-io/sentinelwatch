@@ -402,12 +402,18 @@ const allocations: AllocationConfig[] = [
   },
   {
     id: "grove-uniswap-lp-ausd-usdc-ethereum",
-    underlying: "ethereum:0xbAFeAd7c60Ea473758ED6c6021505E8BBd7e8E5d",
+    underlying: "ethereum:uniswap-v3-lp-grove-ausd-usdc",  // Synthetic token ID
     name: "Uniswap LP AUSD/USDC",
     protocol: "uniswap",
     star: "Grove",
     isLP: true,
     holdingWallet: ALM_ADDRESSES.grove_ethereum,
+    module: "uniswapV3Position",
+    // Uniswap V3 pool metadata - TODO: Fill in actual values
+    poolAddress: "0xbAFeAd7c60Ea473758ED6c6021505E8BBd7e8E5d",  // Actual pool address
+    token0: "ethereum:0x...AUSD_TOKEN_ADDRESS...",  // TODO: Replace with actual AUSD address
+    token1: "ethereum:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",  // USDC
+    feeTier: 3000,  // 0.30% fee tier - TODO: Confirm correct fee tier
   },
   // -------------------------------------------------------------------------
   // Obex

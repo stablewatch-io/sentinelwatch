@@ -20,11 +20,13 @@
 import type { ActiveAllocation } from "../allocationData/types";
 import { fetchErc20Balance } from "./erc20/erc20Balance";
 import { fetchBalance as fetchAnchorageBalance } from "./allocations/anchorage";
+import { fetchBalance as fetchUniswapV3PositionBalance } from "./allocations/uniswapV3Position";
 
 type BalanceFetcher = (allocation: ActiveAllocation) => Promise<string>;
 
 const customAdapters: Record<string, BalanceFetcher> = {
   anchorage: fetchAnchorageBalance,
+  uniswapV3Position: fetchUniswapV3PositionBalance,
 };
 
 export async function fetchAllocationBalance(allocation: ActiveAllocation): Promise<string> {
