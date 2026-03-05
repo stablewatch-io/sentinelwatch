@@ -20,6 +20,18 @@ type ChainlinkFeedAdapter = {
   oracleAddress: string;
 };
 
+type ChronicleVaoAdapter = {
+  type: "chronicleVao";
+  /**
+   * Canonical chain name where the oracle is deployed.
+   * Note: RWA Chronicle VAO oracles are always on Ethereum even when the
+   * token itself lives on another chain (Avalanche, Plume, etc.).
+   */
+  chain: string;
+  /** Chronicle VAO contract address — exposes read() → uint256 (WAD-scaled) */
+  oracleAddress: string;
+};
+
 type Erc4626Adapter = {
   type: "erc4626";
   /** Canonical chain name matching keys in src/utils/rpcs.ts */
@@ -79,6 +91,7 @@ type UniswapV3PositionAdapter = {
 
 export type PriceAdapterConfig =
   | ChainlinkFeedAdapter
+  | ChronicleVaoAdapter
   | Erc4626Adapter
   | AaveOracleAdapter
   | MorphoVaultAdapter
@@ -128,22 +141,30 @@ export const priceAdapters: Record<string, PriceAdapterConfig> = {
   },
 
   // ── Janus Henderson Anemoy AAA CLO Fund Token (JAAA) on Avalanche ─────────
-  // oracle: Chronicle push — same contract as for the Ethereum JAAA token,
-  // queried on Ethereum (fund NAV is chain-agnostic).
+  // oracle: Chronicle VAO on Ethereum (fund NAV is chain-agnostic; VAO type uses read())
   // ref: prices_oracles_reference.md › grove.centrifuge.avalanche JAAA canonical1
   "avalanche:0x58f93d6b1ef2f44ec379cb975657c132cbed3b6b": {
-    type: "chainlinkFeed",
+    type: "chronicleVao",
     chain: "ethereum",
     oracleAddress: "0x02cf8C9fBa24d79886dAc40cb620f0930C6E8eC0",
   },
 
   // ── Anemoy Tokenized Apollo Diversified Credit Fund Token (ACRDX) on Plume ─
-  // oracle: Chronicle push — contract lives on Ethereum (fund NAV is chain-agnostic)
+  // oracle: Chronicle VAO on Ethereum (fund NAV is chain-agnostic; VAO type uses read())
   // ref: prices_oracles_reference.md › grove.centrifuge.plume ACRDX canonical1
   "plume:0x9477724Bb54AD5417de8Baff29e59DF3fB4DA74f": {
-    type: "chainlinkFeed",
+    type: "chronicleVao",
     chain: "ethereum",
     oracleAddress: "0x51cC9463788b870D1e9Bacd111a9bbB2C9820c7e",
+  },
+
+  // ── Securitize Tokenized AAA CLO Fund (STAC) ─────────────────────────────
+  // oracle: Chronicle VAO on Ethereum (canonical1)
+  // ref: prices_oracles_reference.md › grove.securitize.ethereum STAC canonical1
+  "ethereum:0x51C2d74017390CbBd30550179A16A1c28F7210fc": {
+    type: "chronicleVao",
+    chain: "ethereum",
+    oracleAddress: "0x9D77E4cA90E25114AFb24dF908f5918f572D958B",
   },
 
   // ── Sparklend Ethereum ────────────────────────────────────────────────────

@@ -7,6 +7,7 @@
  */
 
 import { fetchChainlinkFeedPrice } from "./chainlinkFeedPrice";
+import { fetchChronicleVaoPrice } from "./chronicleVaoPrice";
 import { fetchErc4626Price } from "./erc4626Price";
 import { fetchAaveOraclePrice } from "./aaveOraclePrice";
 import { fetchMorphoVaultPrice } from "./morphoVaultPrice";
@@ -41,6 +42,11 @@ export async function getCustomPrices(
       try {
         if (adapter.type === "chainlinkFeed") {
           result[id] = await fetchChainlinkFeedPrice(
+            adapter.chain,
+            adapter.oracleAddress
+          );
+        } else if (adapter.type === "chronicleVao") {
+          result[id] = await fetchChronicleVaoPrice(
             adapter.chain,
             adapter.oracleAddress
           );

@@ -32,8 +32,9 @@ import { tokens as tokenRegistry } from "../../allocationData/tokens";
 const VAULT_ABI = [
   "function convertToAssets(uint256 shares) view returns (uint256)",
   "function asset() view returns (address)",
-  "function decimals() view returns (uint8)",
 ];
+
+const ERC20_ABI = ["function decimals() view returns (uint8)"];
 
 const WAD = 10n ** 18n;
 
@@ -53,15 +54,21 @@ export async function fetchMorphoVaultPrice(
   const provider = getProvider(chain);
   const vault = new ethers.Contract(vaultAddress, VAULT_ABI, provider);
 
-  // Query vault for underlying asset and share price
+  // Query vault for underlying asset address and share price in parallel
   const [underlyingAddress, sharePrice]: [string, bigint] = await Promise.all([
     vault.asset(),
-    vault.convertToAssets(WAD), // assets per 1 share (WAD-scaled)
+    vault.convertToAssets(WAD), // returns assets-per-share in the underlying's raw units
   ]);
 
+  // Fetch the underlying token's decimals so we can normalise correctly.
+  // convertToAssets(WAD) returns a value denominated in the underlying token's
+  // own decimal precision — NOT in WAD (18) — so we must divide by 10^underlyingDecimals.
+  // Example: USDC vault → underlyingDecimals=6, sharePrice≈1_005_000 → 1.005
+  //          AUSD vault → underlyingDecimals=18, sharePrice≈1.005e18   → 1.005
+  const underlyingContract = new ethers.Contract(underlyingAddress, ERC20_ABI, provider);
+  const underlyingDecimals: number = Number(await underlyingContract.decimals());
+
   // Build the token ID for price lookup: "chain:address"
-  // The vault's underlying (e.g. USDC, AUSD) is not itself an allocation token,
-  // so it may not have been fetched from DefiLlama yet — fetch on demand if absent.
   const underlyingTokenId = `${chain}:${underlyingAddress.toLowerCase()}`;
 
   let underlyingPrice = prices[underlyingTokenId];
@@ -78,9 +85,8 @@ export async function fetchMorphoVaultPrice(
     );
   }
 
-  // Vault token price = share price (normalized) × underlying price
-  // sharePrice is WAD-scaled (10^18 = 1.0), so divide by WAD to get the multiplier
-  const shareMultiplier = Number(sharePrice) / Number(WAD);
+  // vault token price = (sharePrice / 10^underlyingDecimals) × underlyingPrice
+  const shareMultiplier = Number(sharePrice) / 10 ** underlyingDecimals;
   return shareMultiplier * underlyingPrice;
 }
 
