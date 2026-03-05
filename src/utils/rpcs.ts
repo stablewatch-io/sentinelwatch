@@ -53,6 +53,7 @@ export const chainNameToChainId: Record<
 	sonic: { chainId: 146, display: 'Sonic' },
 	unichain: { chainId: 130, display: 'Unichain' },
 	hyperevm: { chainId: 999, display: 'HyperEVM' },
+	monad: { chainId: 10143, display: 'Monad' },
 	plume: { chainId: undefined, display: 'Plume' },
 	etlk: { chainId: undefined, display: 'Etherlink' },
 	sapphire: { chainId: undefined, display: 'Oasis Sapphire' },
