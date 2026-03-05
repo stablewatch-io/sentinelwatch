@@ -18,7 +18,7 @@ import {
 import storeNewAllocationBalances from "./peggedAssets/storePeggedAssets/storeNewPeggedBalances";
 import allocations from "./allocationData/allocations";
 import { isActiveAllocation } from "./allocationData/types";
-import { fetchErc20Balance } from "./adapters/erc20Balance";
+import { fetchBalance } from "./adapters/index";
 
 const FETCH_TIMEOUT_MS = 30_000; // 30 s per allocation
 
@@ -35,10 +35,10 @@ function withTimeout<T>(prom: Promise<T>, ms: number, label: string): Promise<T>
 const handler = async (_event: any): Promise<void> => {
   const timestamp = getCurrentUnixTimestamp();
 
-  // Only process allocations that have an address and aren't skipped
+  // Process all allocations that have an underlying token — including skip:true
+  // ones.  The skip flag only controls API visibility, not DB storage.
   const active = allocations
-    .filter(isActiveAllocation)
-    .filter((a) => !a.skip);
+    .filter(isActiveAllocation);
 
   console.log(
     `storeAllocationBalances: processing ${active.length} allocation(s) at ${timestamp}`
@@ -49,7 +49,7 @@ const handler = async (_event: any): Promise<void> => {
       let balance: string;
       try {
         balance = await withTimeout(
-          fetchErc20Balance(allocation),
+          fetchBalance(allocation),
           FETCH_TIMEOUT_MS,
           allocation.id
         );

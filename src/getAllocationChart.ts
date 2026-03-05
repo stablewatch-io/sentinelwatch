@@ -69,9 +69,12 @@ export async function craftAllocationChartResponse(
   allocationId: string | undefined,
   startTimestamp: string | undefined
 ): Promise<any> {
+  // skip:true allocations are stored in the DB but never exposed via the API.
+  const visible = allocations.filter(isActiveAllocation).filter((a) => !a.skip);
+
   const subset = allocationId
-    ? allocations.filter((a) => a.id === allocationId)
-    : allocations.filter(isActiveAllocation).filter((a) => !a.skip);
+    ? visible.filter((a) => a.id === allocationId)
+    : visible;
 
   if (allocationId && subset.length === 0) {
     return errorResponse({ message: `Unknown allocation id: ${allocationId}` });

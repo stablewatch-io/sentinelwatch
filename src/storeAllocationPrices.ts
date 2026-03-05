@@ -34,9 +34,9 @@ const handler = async (_event: any): Promise<void> => {
   const timestamp = getCurrentUnixTimestamp();
   const daySK = getTimestampAtStartOfDay(timestamp);
 
+  // Include skip:true allocations — skip only controls API visibility.
   const active = allocations
-    .filter(isActiveAllocation)
-    .filter((a) => !a.skip);
+    .filter(isActiveAllocation);
 
   // Deduplicate: price is per unique underlying token, not per allocation
   const uniqueTokenIds = [...new Set(active.map((a) => a.underlying))];

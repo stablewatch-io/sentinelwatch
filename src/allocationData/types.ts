@@ -24,8 +24,18 @@ export type AllocationConfig = {
    * Null / undefined while the token address is still being sourced.
    */
   underlying?: string | null;
-  /** Wallet whose ERC-20 balance of the underlying token is being tracked. */
-  holdingWallet: string;
+  /**
+   * Wallet whose ERC-20 balance of the underlying token is being tracked.
+   * When present (and `module` is absent), the generic erc20Balance adapter
+   * is used automatically.  Omit only when a custom `module` is specified.
+   */
+  holdingWallet?: string | null;
+  /**
+   * Name of the custom balance adapter in src/adapters/allocations/.
+   * When set, this adapter is used instead of the default erc20Balance logic,
+   * regardless of whether holdingWallet is also present.
+   */
+  module?: string | null;
   /** ISO-8601 date string for when tracking started (e.g. "2024-01-15"). */
   startDate?: string | null;
   /** True if this allocation is a yield-bearing share. */

@@ -32,6 +32,21 @@ export type Token = {
  *   const token = tokens["ethereum:0x80ac24aa..."];
  */
 export const tokens: Record<string, Token> = {
+  "ethereum:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": {
+    id:         "ethereum:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    name:       "USD Coin",
+    blockchain: "ethereum",
+    address:    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    decimals:   6,
+    coingeckoId: "usd-coin",
+  },
+  "ethereum:0x356b8d89c1e1239cbbb9de4815c39a1474d5ba7d": {
+    id:         "ethereum:0x356b8d89c1e1239cbbb9de4815c39a1474d5ba7d",
+    name:       "Syrup USDT",
+    blockchain: "ethereum",
+    address:    "0x356b8d89c1e1239cbbb9de4815c39a1474d5ba7d",
+    decimals:   6,
+  },
   "ethereum:0x80ac24aa929eaf5013f6436cda2a7ba190f5cc0b": {
     id:         "ethereum:0x80ac24aa929eaf5013f6436cda2a7ba190f5cc0b",
     name:       "Syrup USDC",
@@ -163,11 +178,32 @@ export const tokens: Record<string, Token> = {
     address:    "0xBeefF08dF54897e7544aB01d0e86f013DA354111",
     decimals:   18,
   },
+  "ethereum:0xBEEfF0d672ab7F5018dFB614c93981045D4aA98a": {
+    id:         "ethereum:0xBEEfF0d672ab7F5018dFB614c93981045D4aA98a",
+    name:       "Grove x Steakhouse AUSD",
+    blockchain: "ethereum",
+    address:    "0xBEEfF0d672ab7F5018dFB614c93981045D4aA98a",
+    decimals:   18,
+  },
+  "ethereum:0xBEEf2B5FD3D94469b7782aeBe6364E6e6FB1B709": {
+    id:         "ethereum:0xBEEf2B5FD3D94469b7782aeBe6364E6e6FB1B709",
+    name:       "Grove x Steakhouse USDC",
+    blockchain: "ethereum",
+    address:    "0xBEEf2B5FD3D94469b7782aeBe6364E6e6FB1B709",
+    decimals:   18,
+  },
   "base:0xBeEf2d50B428675a1921bC6bBF4bfb9D8cF1461A": {
     id:         "base:0xBeEf2d50B428675a1921bC6bBF4bfb9D8cF1461A",
     name:       "Grove x Steakhouse USDC High Yield",
     blockchain: "base",
     address:    "0xBeEf2d50B428675a1921bC6bBF4bfb9D8cF1461A",
+    decimals:   18,
+  },
+  "base:0xbeef0e0834849aCC03f0089F01f4F1Eeb06873C9": {
+    id:         "base:0xbeef0e0834849aCC03f0089F01f4F1Eeb06873C9",
+    name:       "SteakUSDC V2",
+    blockchain: "base",
+    address:    "0xbeef0e0834849aCC03f0089F01f4F1Eeb06873C9",
     decimals:   18,
   },
   "ethereum:0x8c213ee79581Ff4984583C6a801e5263418C4b86": {
@@ -200,5 +236,19 @@ export const tokens: Record<string, Token> = {
     name:       "Galaxy Arch CLO Token",
     blockchain: "avalanche",
     address:    "0x2c0adff8e114f3ca106051144353ac703d24b901",
+  },
+  "ethereum:0xe79c1c7e24755574438a26d5e062ad2626c04662": {
+    id:         "ethereum:0xe79c1c7e24755574438a26d5e062ad2626c04662",
+    name:       "Curve LP AUSD/USDC",
+    blockchain: "ethereum",
+    address:    "0xe79c1c7e24755574438a26d5e062ad2626c04662",
+    decimals:   18,
+  },
+  "ethereum:0xbAFeAd7c60Ea473758ED6c6021505E8BBd7e8E5d": {
+    id:         "ethereum:0xbAFeAd7c60Ea473758ED6c6021505E8BBd7e8E5d",
+    name:       "Uniswap LP AUSD/USDC",
+    blockchain: "ethereum",
+    address:    "0xbAFeAd7c60Ea473758ED6c6021505E8BBd7e8E5d",
+    decimals:   18,
   },
 };

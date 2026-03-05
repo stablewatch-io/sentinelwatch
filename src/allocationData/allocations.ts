@@ -24,8 +24,6 @@ export const ALM_ADDRESSES: Record<string, string> = {
 // "<blockchain>:<address>" id.  The blockchain for an allocation is always
 // determined by its underlying token — there is no separate `blockchain` field.
 //
-// Leave `underlying` out until the address is known — isActiveAllocation()
-// will skip those entries at runtime.
 // ---------------------------------------------------------------------------
 const allocations: AllocationConfig[] = [
   // -------------------------------------------------------------------------
@@ -41,11 +39,21 @@ const allocations: AllocationConfig[] = [
     holdingWallet: ALM_ADDRESSES.spark_ethereum,
   },
   {
+    id: "spark-syrup-usdt-ethereum",
+    underlying: "ethereum:0x356b8d89c1e1239cbbb9de4815c39a1474d5ba7d",
+    name: "Syrup USDT",
+    protocol: "maple",
+    star: "Spark",
+    isYBS: true,
+    holdingWallet: ALM_ADDRESSES.spark_ethereum,
+  },
+  {
     id: "spark-paypal-usd-ethereum",
     underlying: "ethereum:0x6c3ea9036406852006290770BEdFcAbA0e23A0e8",
     name: "PayPal USD",
     protocol: "paypal",
     star: "Spark",
+    skip: true,
     holdingWallet: ALM_ADDRESSES.spark_ethereum,
   },
   {
@@ -151,11 +159,12 @@ const allocations: AllocationConfig[] = [
   },
   {
     id: "spark-anchorage-ethereum",
-    // underlying: "ethereum:0x...", // address TBD
+    underlying: "ethereum:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
     name: "Anchorage",
     protocol: "anchorage",
     star: "Spark",
-    holdingWallet: ALM_ADDRESSES.spark_ethereum,
+    module: "anchorage",
+    // No holdingWallet — balance is provided by the custom adapter.
   },
   {
     id: "spark-base-psm3-usdc-base",
@@ -306,6 +315,7 @@ const allocations: AllocationConfig[] = [
     star: "Grove",
     isLending: true,
     isMerkle: true,
+    skip: true,
     holdingWallet: ALM_ADDRESSES.grove_ethereum,
   },
   {
@@ -314,7 +324,16 @@ const allocations: AllocationConfig[] = [
     name: "USDC",
     protocol: "circle",
     star: "Grove",
+    skip: true,
     holdingWallet: "0x94B398ACb2fcE988871218221EA6a4a2b26CcCbC",
+  },
+  {
+    id: "grove-grove-x-steakhouse-ausd-ethereum",
+    underlying: "ethereum:0xBEEfF0d672ab7F5018dFB614c93981045D4aA98a",
+    name: "Grove x Steakhouse AUSD",
+    protocol: "morpho",
+    star: "Grove",
+    holdingWallet: ALM_ADDRESSES.grove_ethereum,
   },
   {
     id: "grove-grove-x-steakhouse-usdc-high-yield-ethereum",
@@ -325,11 +344,29 @@ const allocations: AllocationConfig[] = [
     holdingWallet: ALM_ADDRESSES.grove_base,
   },
   {
+    id: "grove-grove-x-steakhouse-usdc-ethereum",
+    underlying: "ethereum:0xBEEf2B5FD3D94469b7782aeBe6364E6e6FB1B709",
+    name: "Grove x Steakhouse USDC",
+    protocol: "morpho",
+    star: "Grove",
+    holdingWallet: ALM_ADDRESSES.grove_base,
+  },
+  {
     id: "grove-grove-x-steakhouse-usdc-high-yield-base",
     underlying: "base:0xBeEf2d50B428675a1921bC6bBF4bfb9D8cF1461A",
     name: "Grove x Steakhouse USDC High Yield",
     protocol: "morpho",
     star: "Grove",
+    holdingWallet: ALM_ADDRESSES.grove_base,
+  },
+  {
+    id: "grove-steakusdc-v2-base",
+    underlying: "base:0xbeef0e0834849aCC03f0089F01f4F1Eeb06873C9",
+    name: "SteakUSDC V2",
+    protocol: "morpho",
+    star: "Grove",
+    isLending: true,
+    skip: true,
     holdingWallet: ALM_ADDRESSES.grove_base,
   },
   {
@@ -349,6 +386,24 @@ const allocations: AllocationConfig[] = [
     star: "Grove",
     isYBS: true,
     holdingWallet: ALM_ADDRESSES.spark_ethereum,
+  },
+  {
+    id: "grove-curve-lp-ausd-usdc-ethereum",
+    underlying: "ethereum:0xe79c1c7e24755574438a26d5e062ad2626c04662",
+    name: "Curve LP AUSD/USDC",
+    protocol: "curve",
+    star: "Grove",
+    isLP: true,
+    holdingWallet: ALM_ADDRESSES.grove_ethereum,
+  },
+  {
+    id: "grove-uniswap-lp-ausd-usdc-ethereum",
+    underlying: "ethereum:0xbAFeAd7c60Ea473758ED6c6021505E8BBd7e8E5d",
+    name: "Uniswap LP AUSD/USDC",
+    protocol: "uniswap",
+    star: "Grove",
+    isLP: true,
+    holdingWallet: ALM_ADDRESSES.grove_ethereum,
   },
   // -------------------------------------------------------------------------
   // Obex

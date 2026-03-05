@@ -17,16 +17,18 @@
  */
 
 import { ethers } from "ethers";
-import { getProvider } from "../utils/providers";
-import type { ActiveAllocation } from "../allocationData/types";
-import { tokens as tokenRegistry } from "../allocationData/tokens";
+import { getProvider } from "../../utils/providers";
+import type { ActiveAllocation } from "../../allocationData/types";
+import { tokens as tokenRegistry } from "../../allocationData/tokens";
 
 const ERC20_ABI = [
   "function balanceOf(address owner) view returns (uint256)",
   "function decimals() view returns (uint8)",
 ];
 
-export async function fetchErc20Balance(allocation: ActiveAllocation): Promise<string> {
+export async function fetchErc20Balance(
+  allocation: ActiveAllocation & { holdingWallet: string }
+): Promise<string> {
   const token = tokenRegistry[allocation.underlying];
   if (!token) {
     throw new Error(
@@ -47,3 +49,4 @@ export async function fetchErc20Balance(allocation: ActiveAllocation): Promise<s
 
   return ethers.formatUnits(raw, decimals);
 }
+
