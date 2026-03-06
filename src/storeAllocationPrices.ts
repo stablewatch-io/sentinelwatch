@@ -16,12 +16,9 @@
 import { wrapScheduledLambda } from "./utils/shared/wrap";
 import {
   getCurrentUnixTimestamp,
-  getDay,
   getTimestampAtStartOfDay,
-  secondsInDay,
 } from "./utils/date";
 import db from "./utils/shared/db";
-import getRecordClosestToTimestamp from "./utils/shared/getRecordClosestToTimestamp";
 import {
   hourlyAllocationPrices,
   dailyAllocationPrices,
@@ -87,23 +84,19 @@ const handler = async (_event: any): Promise<void> => {
     prices,
   });
 
-  // ----- Write daily record (first write of the day only) -----
-  const closestDaily = await getRecordClosestToTimestamp(
-    dailyAllocationPrices,
-    timestamp,
-    secondsInDay * 1.5
+  // ----- Write daily record (always overwrite so the last run of the day wins) -----
+  // We do NOT use "first write only" here because the first hourly run of the day
+  // may have adapter errors (returning 0 for newly-added tokens).  Overwriting on
+  // each run means the daily record always reflects the most recent — and therefore
+  // most complete — set of prices for that calendar day.
+  await db.put({
+    PK: dailyAllocationPrices,
+    SK: daySK,
+    prices,
+  });
+  console.log(
+    `storeAllocationPrices: wrote/updated daily price record for ${new Date(daySK * 1000).toISOString().slice(0, 10)}`
   );
-
-  if (getDay(closestDaily?.SK) !== getDay(timestamp)) {
-    await db.put({
-      PK: dailyAllocationPrices,
-      SK: daySK,
-      prices,
-    });
-    console.log(
-      `storeAllocationPrices: wrote daily price record for ${new Date(daySK * 1000).toISOString().slice(0, 10)}`
-    );
-  }
 
   console.log("storeAllocationPrices: done");
 };

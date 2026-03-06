@@ -58,3 +58,4 @@ export async function fetchChronicleVaoPrice(
   return Number(val) / Number(WAD);
 }
 
+
