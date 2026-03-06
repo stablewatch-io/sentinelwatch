@@ -141,14 +141,14 @@ export const tokens: Record<string, Token> = {
     name:       "BlackRock USD Institutional Digital Liquidity Fund - I Class",
     blockchain: "ethereum",
     address:    "0x6a9DA2D710BB9B700acde7Cb81F10F1fF8C89041",
-    decimals:   18,
+    decimals:   6,
   },
   "ethereum:0x51C2d74017390CbBd30550179A16A1c28F7210fc": {
     id:         "ethereum:0x51C2d74017390CbBd30550179A16A1c28F7210fc",
     name:       "Securitize Tokenized AAA CLO Fund",
     blockchain: "ethereum",
     address:    "0x51C2d74017390CbBd30550179A16A1c28F7210fc",
-    decimals:   18,
+    decimals:   6,
   },
   "ethereum:0xFa82580c16A31D0c1bC632A36F82e83EfEF3Eec0": {
     id:         "ethereum:0xFa82580c16A31D0c1bC632A36F82e83EfEF3Eec0",
