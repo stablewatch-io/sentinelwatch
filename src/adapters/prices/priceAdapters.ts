@@ -89,16 +89,6 @@ type UniswapV3PositionAdapter = {
    */
 };
 
-type IdlePriceAdapter = {
-  type: "idlePrice";
-  /**
-   * For allocations with hasIdle=true, returns {price, idlePrice}.
-   * Both the active and idle components use these separate prices.
-   */
-  price: number;
-  idlePrice: number;
-};
-
 export type PriceAdapterConfig =
   | ChainlinkFeedAdapter
   | ChronicleVaoAdapter
@@ -106,8 +96,7 @@ export type PriceAdapterConfig =
   | AaveOracleAdapter
   | MorphoVaultAdapter
   | HardcodedAdapter
-  | UniswapV3PositionAdapter
-  | IdlePriceAdapter;
+  | UniswapV3PositionAdapter;
 
 /**
  * Custom price adapters for tokens not covered by the DefiLlama API.
@@ -309,36 +298,21 @@ export const priceAdapters: Record<string, PriceAdapterConfig> = {
     type: "uniswapV3Position",
   },
 
-  // ── Idle Price Adapters ───────────────────────────────────────────────────
-  // For allocations with hasIdle=true, price adapters return both active and idle prices.
-  // Both set to 1 for stablecoin-based allocations.
+  // ── Curve LP Tokens with Idle Balances ────────────────────────────────────
+  // For these Curve LP positions, both the allocated and idle components are
+  // stablecoins, so we use a hardcoded price of 1 for the LP token itself.
+  // The idle component price (accessed via "-idle" suffix) is also 1.
 
-  // Spark DAI (Idle) — spDAI token
-  "ethereum:0x4DEDf26112B3Ec8eC46e7E31EA5e123490B05B8B": {
-    type: "idlePrice",
-    price: 1,
-    idlePrice: 1,
-  },
-
-  // Spark USDS (Idle) — spUSDS token
-  "ethereum:0xC02aB1A5eaA8d1B114EF786D9bde108cD4364359": {
-    type: "idlePrice",
-    price: 1,
-    idlePrice: 1,
-  },
-
-  // Spark.fi PYUSD Reserve (Idle) — Curve LP token
+  // Spark.fi PYUSD Reserve — Curve LP (PYUSD/USDC)
   "ethereum:0xA632D59b9B804a956BfaA9b48Af3A1b74808FC1f": {
-    type: "idlePrice",
+    type: "hardcoded",
     price: 1,
-    idlePrice: 1,
   },
 
-  // Spark.fi USDT Reserve (Idle) — Curve LP token
+  // Spark.fi USDT Reserve — Curve LP (USDT/USDC)
   "ethereum:0x00836Fe54625BE242BcFA286207795405ca4fD10": {
-    type: "idlePrice",
+    type: "hardcoded",
     price: 1,
-    idlePrice: 1,
   },
 };
 

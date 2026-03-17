@@ -35,6 +35,13 @@ export async function getCustomPrices(
   // Pass 1: Process all non-morphoVault adapters (no dependencies)
   await Promise.all(
     tokenIds.map(async (id) => {
+      // Handle idle prices: for "-idle" suffixed token IDs, return 1
+      if (id.endsWith("-idle")) {
+        result[id] = 1;
+        console.log(`getCustomPrices [${id}]: idle price = 1`);
+        return;
+      }
+
       const adapter = priceAdapters[id];
       if (!adapter || adapter.type === "morphoVault") return;
 
@@ -66,12 +73,6 @@ export async function getCustomPrices(
           result[id] = adapter.price;
         } else if (adapter.type === "uniswapV3Position") {
           result[id] = 1.0;  // Balance adapter returns USD value directly
-        } else if (adapter.type === "idlePrice") {
-          // Store both active and idle prices
-          result[id] = adapter.price;
-          result[`${id}-idle`] = adapter.idlePrice;
-          console.log(`getCustomPrices [${id}]: price=${adapter.price}, idlePrice=${adapter.idlePrice}`);
-          return; // Skip the generic logging below
         }
         console.log(`getCustomPrices [${id}]: price=${result[id]}`);
       } catch (err) {
