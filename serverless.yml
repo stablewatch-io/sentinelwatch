@@ -145,6 +145,15 @@ functions:
           path: latestvalidationreport
           method: get
 
+  allocationsEnriched:
+    handler: src/getAllocationsEnriched.default
+    timeout: 30
+    memorySize: 512
+    events:
+      - http:
+          path: allocationsenriched
+          method: get
+
   # ---------------------------------------------------------------------------
   # Cron jobs — write / ingest data
   # ---------------------------------------------------------------------------
