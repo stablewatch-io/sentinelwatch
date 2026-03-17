@@ -23,14 +23,9 @@ import {
   IResponse,
   errorResponse,
 } from "./utils/shared";
-import { getHistoricalValues } from "./utils/shared/db";
-import {
-  getLastRecord,
-  dailyAllocationBalances,
-  hourlyAllocationBalances,
-  dailyAllocationPrices,
-  hourlyAllocationPrices,
-} from "./peggedAssets/utils/getLastRecord";
+import { db, tokenPrices, allocationBalances } from "./utils/shared/db";
+import { getLastTokenPrices, getLastAllocationBalance } from "./utils/shared/getLastRecord";
+import { eq, and, asc } from "drizzle-orm";
 import { getClosestDayStartTimestamp, secondsInHour } from "./utils/date";
 import allocations from "./allocationData/allocations";
 import { isActiveAllocation } from "./allocationData/types";
@@ -69,8 +64,7 @@ export async function craftAllocationChartResponse(
   allocationId: string | undefined,
   startTimestamp: string | undefined
 ): Promise<any> {
-  // skip:true allocations are stored in the DB but never exposed via the API.
-  const visible = allocations.filter(isActiveAllocation).filter((a) => !a.skip);
+  const visible = allocations.filter(isActiveAllocation);
 
   const subset = allocationId
     ? visible.filter((a) => a.id === allocationId)
@@ -83,24 +77,29 @@ export async function craftAllocationChartResponse(
   const startTs = startTimestamp ? parseInt(startTimestamp, 10) : 0;
 
   // ----- Load daily price series -----
-  const dailyPricesHistory = await getHistoricalValues(dailyAllocationPrices);
-  const lastHourlyPrice = await getLastRecord(hourlyAllocationPrices);
+  const dailyPricesHistory = await db
+    .select()
+    .from(tokenPrices)
+    .where(eq(tokenPrices.granularity, "daily"))
+    .orderBy(asc(tokenPrices.timestamp));
+
+  const lastHourlyPrice = await getLastTokenPrices("hourly");
 
   // Patch latest daily price entry with most-recent hourly if same day
   if (dailyPricesHistory.length > 0 && lastHourlyPrice) {
     const lastDaily = dailyPricesHistory[dailyPricesHistory.length - 1];
     if (
-      lastHourlyPrice.SK > lastDaily.SK &&
-      lastDaily.SK + secondsInHour * 25 > lastHourlyPrice.SK
+      lastHourlyPrice.timestamp > lastDaily.timestamp &&
+      lastDaily.timestamp + secondsInHour * 25 > lastHourlyPrice.timestamp
     ) {
       dailyPricesHistory[dailyPricesHistory.length - 1] = {
         ...lastHourlyPrice,
-        SK: lastDaily.SK,
+        timestamp: lastDaily.timestamp,
       };
     }
   }
 
-  const priceSKs = dailyPricesHistory.map((r) => r.SK as number);
+  const priceSKs = dailyPricesHistory.map((r) => r.timestamp);
 
   /**
    * Look up the USD price for a token id ("blockchain:address") at a
@@ -127,40 +126,49 @@ export async function craftAllocationChartResponse(
 
   await Promise.all(
     subset.map(async (allocation) => {
-      const history = await getHistoricalValues(
-        dailyAllocationBalances(allocation.id)
-      );
+      const history = await db
+        .select()
+        .from(allocationBalances)
+        .where(
+          and(
+            eq(allocationBalances.allocationId, allocation.id),
+            eq(allocationBalances.granularity, "daily")
+          )
+        )
+        .orderBy(asc(allocationBalances.timestamp));
 
       // Patch with latest hourly if same day
-      const lastHourlyBalance = await getLastRecord(
-        hourlyAllocationBalances(allocation.id)
-      );
+      const lastHourlyBalance = await getLastAllocationBalance(allocation.id, "hourly");
       if (history.length > 0 && lastHourlyBalance) {
         const lastD = history[history.length - 1];
         if (
-          lastHourlyBalance.SK > lastD.SK &&
-          lastD.SK + secondsInHour * 25 > lastHourlyBalance.SK
+          lastHourlyBalance.timestamp > lastD.timestamp &&
+          lastD.timestamp + secondsInHour * 25 > lastHourlyBalance.timestamp
         ) {
-          history[history.length - 1] = { ...lastHourlyBalance, SK: lastD.SK };
+          history[history.length - 1] = { 
+            ...lastHourlyBalance, 
+            timestamp: lastD.timestamp 
+          };
         }
       }
 
       // Price key is the underlying token id ("blockchain:address")
+      // Use priceOverride if set (for cross-chain tokens with better price feeds on one chain)
       const priceKey = isActiveAllocation(allocation)
-        ? allocation.underlying
+        ? (allocation.priceOverride || allocation.underlying)
         : "";
 
       const { star } = allocation;
 
       for (const item of history) {
-        const daySK = getClosestDayStartTimestamp(item.SK as number);
+        const daySK = getClosestDayStartTimestamp(item.timestamp);
         if (daySK < startTs) continue;
 
         const priceUSD = priceKey ? getPriceAt(priceKey, daySK) : 0;
         // balance is stored as a decimal string ("86639871.842302") to preserve
         // full on-chain precision; convert to number only here for arithmetic.
         const rawBalance =
-          item.balance != null ? Number(item.balance) : 0;
+          item.balanceData.balance != null ? Number(item.balanceData.balance) : 0;
 
         // Keep full precision for totals accumulation; round per-allocation
         // value to cents for display.

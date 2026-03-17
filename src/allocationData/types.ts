@@ -4,9 +4,6 @@
  * `underlying` is optional here because some entries are still being filled in.
  * Use `ActiveAllocation` (and `isActiveAllocation()`) everywhere the underlying
  * token address is actually required (balance fetching, pricing, etc.).
- *
- * Note: there is no `blockchain` field on an allocation — the chain is
- * determined by the underlying token (`underlying.split(':')[0]`).
  */
 export type AllocationConfig = {
   /** Unique stable identifier — used as the DB partition key suffix. */
@@ -17,6 +14,10 @@ export type AllocationConfig = {
   protocol: string;
   /** Grouping label (e.g. "Spark", "Grove", "Obex"). */
   star: string;
+  /** Blockchain network (e.g. "ethereum", "base", "avalanche"). */
+  blockchain: string;
+  /** Type of allocation: "allocation", "asset", or "PSM3". */
+  type: string;
   /**
    * Reference to the underlying token, formatted as "<blockchain>:<address>"
    * — the token's id in src/allocationData/tokens.ts.
@@ -48,9 +49,9 @@ export type AllocationConfig = {
   isLP?: boolean | null;
   /** True if some portion sits idle (not deployed). */
   containsIdle?: boolean | null;
+  /** True if this allocation has RRC (Risk Review Committee) oversight. */
+  hasRRC?: boolean | null;
   market?: string | null;
-  /** If true, skip this allocation in all cron jobs. */
-  skip?: boolean | null;
   /**
    * For Uniswap V3 LP positions: the pool address.
    */
@@ -67,6 +68,15 @@ export type AllocationConfig = {
    * For Uniswap V3 LP positions: fee tier (e.g., 3000 = 0.30%).
    */
   feeTier?: number | null;
+  /**
+   * Optional price override: when set, the pricing pipeline will use this
+   * token address instead of `underlying` for USD price lookups.
+   * Format: "<blockchain>:<address>" (must match a key in tokens.ts).
+   * 
+   * Use case: cross-chain tokens where one chain has better price feeds
+   * (e.g., use Ethereum USDS price for USDS on all chains).
+   */
+  priceOverride?: string | null;
 };
 
 /**

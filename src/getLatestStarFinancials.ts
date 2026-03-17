@@ -12,19 +12,16 @@
  * }
  */
 import { successResponse, wrap, IResponse } from "./utils/shared";
-import {
-  getLastRecord,
-  hourlyStarFinancials,
-} from "./peggedAssets/utils/getLastRecord";
+import { getLastStarFinancials } from "./utils/shared/getLastRecord";
 import { stars } from "./starData/stars";
 
 const handler = async (
   _event: AWSLambda.APIGatewayEvent
 ): Promise<IResponse> => {
-  const latest = await getLastRecord(hourlyStarFinancials);
+  const latest = await getLastStarFinancials("hourly");
 
   const storedData: Record<string, { debt?: string; rc?: string }> =
-    latest?.data ?? {};
+    latest?.financialsData ?? {};
 
   const result: Record<string, { debt: string | null; rc: string | null }> =
     {};
@@ -40,7 +37,7 @@ const handler = async (
 
   return successResponse(
     {
-      timestamp: latest?.SK ?? null,
+      timestamp: latest?.timestamp ?? null,
       ...result,
     },
     60 // 1-minute cache

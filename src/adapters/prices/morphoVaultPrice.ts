@@ -36,7 +36,7 @@ const VAULT_ABI = [
 
 const ERC20_ABI = ["function decimals() view returns (uint8)"];
 
-const WAD = 10n ** 18n;
+const WAD = BigInt(10) ** BigInt(18);
 
 /**
  * Returns the current USD price of a MetaMorpho vault token.

@@ -23,7 +23,7 @@ const VAO_ABI = [
 ];
 
 /** Chronicle VAO prices are WAD-scaled (18 decimals). 1e18 = $1.00 */
-const WAD = 10n ** 18n;
+const WAD = BigInt(10) ** BigInt(18);
 
 /**
  * Fetches the current USD price from a Chronicle VAO oracle.

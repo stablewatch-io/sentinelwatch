@@ -91,6 +91,15 @@ functions:
           path: allocationchart
           method: get
 
+  latestAllocationChart:
+    handler: src/getLatestAllocationChart.default
+    timeout: 15
+    memorySize: 256
+    events:
+      - http:
+          path: latestallocationchart
+          method: get
+
   allocationPrices:
     handler: src/getAllocationPrices.default
     timeout: 60
@@ -127,6 +136,15 @@ functions:
           path: config
           method: get
 
+  latestValidationReport:
+    handler: src/getLatestValidationReport.default
+    timeout: 15
+    memorySize: 256
+    events:
+      - http:
+          path: latestvalidationreport
+          method: get
+
   # ---------------------------------------------------------------------------
   # Cron jobs — write / ingest data
   # ---------------------------------------------------------------------------
@@ -150,6 +168,13 @@ functions:
     memorySize: 256
     events:
       - schedule: cron(20 * * * ? *) # :20 past every hour
+
+  storeBlockAnalyticaAllocationsSnapshot:
+    handler: src/storeBlockAnalyticaAllocationsSnapshot.default
+    timeout: 120
+    memorySize: 256
+    events:
+      - schedule: cron(0 1 * * ? *) # Daily at 01:00 UTC
 
 resources:
   # CORS headers on API Gateway error responses (4xx / 5xx)

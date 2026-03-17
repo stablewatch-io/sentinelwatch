@@ -14,12 +14,12 @@
  */
 
 import { successResponse, wrap, IResponse } from "./utils/shared";
-import { getLastRecord, hourlyAllocationPrices } from "./peggedAssets/utils/getLastRecord";
+import { getLastTokenPrices } from "./utils/shared/getLastRecord";
 
 const handler = async (
   _event: AWSLambda.APIGatewayEvent
 ): Promise<IResponse> => {
-  const latest = await getLastRecord(hourlyAllocationPrices);
+  const latest = await getLastTokenPrices("hourly");
 
   if (!latest) {
     return successResponse({ message: "No price data in DB yet" }, 0);
@@ -27,7 +27,7 @@ const handler = async (
 
   return successResponse(
     {
-      timestamp: latest.SK,
+      timestamp: latest.timestamp,
       prices: latest.prices ?? {},
     },
     60 // 1-min cache — this is a debug/test endpoint

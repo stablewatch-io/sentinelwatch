@@ -55,8 +55,8 @@ function calculatePositionAmounts(
   tickUpper: number
 ): { amount0: bigint; amount1: bigint } {
   // If no liquidity, return zero
-  if (liquidity === 0n) {
-    return { amount0: 0n, amount1: 0n };
+  if (liquidity === BigInt(0)) {
+    return { amount0: BigInt(0), amount1: BigInt(0) };
   }
 
   // Convert ticks to sqrt prices (Q64.96 format)
@@ -64,8 +64,8 @@ function calculatePositionAmounts(
   const sqrtPriceUpper = tickToSqrtPriceX96(tickUpper);
   const sqrtPriceCurrent = tickToSqrtPriceX96(currentTick);
 
-  let amount0 = 0n;
-  let amount1 = 0n;
+  let amount0 = BigInt(0);
+  let amount1 = BigInt(0);
 
   // Position is out of range (price below range)
   if (currentTick < tickLower) {
@@ -90,7 +90,7 @@ function calculatePositionAmounts(
  * Convert tick to sqrtPriceX96: sqrt(1.0001^tick) * 2^96
  */
 function tickToSqrtPriceX96(tick: number): bigint {
-  const Q96 = 2n ** 96n;
+  const Q96 = BigInt(2) ** BigInt(96);
   // For simplicity, use approximate calculation
   // price = 1.0001^tick
   // sqrtPrice = sqrt(price)
@@ -119,7 +119,7 @@ function getAmount0ForLiquidity(
     [sqrtPriceAX96, sqrtPriceBX96] = [sqrtPriceBX96, sqrtPriceAX96];
   }
   
-  const Q96 = 2n ** 96n;
+  const Q96 = BigInt(2) ** BigInt(96);
   const numerator = liquidity * Q96 * (sqrtPriceBX96 - sqrtPriceAX96);
   const denominator = sqrtPriceBX96 * sqrtPriceAX96;
   
@@ -138,7 +138,7 @@ function getAmount1ForLiquidity(
     [sqrtPriceAX96, sqrtPriceBX96] = [sqrtPriceBX96, sqrtPriceAX96];
   }
   
-  const Q96 = 2n ** 96n;
+  const Q96 = BigInt(2) ** BigInt(96);
   return (liquidity * (sqrtPriceBX96 - sqrtPriceAX96)) / Q96;
 }
 

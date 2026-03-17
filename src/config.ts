@@ -24,7 +24,6 @@ const handler = async (
     isYBS: a.isYBS ?? null,
     isLending: a.isLending ?? null,
     isLP: a.isLP ?? null,
-    skip: a.skip ?? false,
   }));
   return successResponse(response, 10 * 60); // 10-min cache
 };

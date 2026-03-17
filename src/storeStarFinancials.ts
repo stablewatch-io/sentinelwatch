@@ -15,12 +15,8 @@ import {
   getTimestampAtStartOfDay,
   secondsInDay,
 } from "./utils/date";
-import db from "./utils/shared/db";
-import getRecordClosestToTimestamp from "./utils/shared/getRecordClosestToTimestamp";
-import {
-  hourlyStarFinancials,
-  dailyStarFinancials,
-} from "./peggedAssets/utils/getLastRecord";
+import { db, starFinancials } from "./utils/shared/db";
+import { eq, and, desc } from "drizzle-orm";
 import { stars } from "./starData/stars";
 import { getProvider } from "./utils/providers";
 import { ethers } from "ethers";
@@ -41,7 +37,7 @@ const ERC20_ABI = [
   "function decimals() view returns (uint8)",
 ];
 
-const RAY = 10n ** 27n;
+const RAY = BigInt(10) ** BigInt(27);
 
 // ---------------------------------------------------------------------------
 // Handler
@@ -96,25 +92,39 @@ const handler = async (_event: any): Promise<void> => {
   }
 
   // ── Write hourly record ──────────────────────────────────────────────────
-  await db.put({
-    PK: hourlyStarFinancials,
-    SK: timestamp,
-    data,
-  });
+  await db
+    .insert(starFinancials)
+    .values({
+      timestamp,
+      granularity: "hourly",
+      financialsData: data,
+    })
+    .onConflictDoUpdate({
+      target: [starFinancials.granularity, starFinancials.timestamp],
+      set: { financialsData: data },
+    });
 
   // ── Write daily record (first write of the day only) ────────────────────
-  const closestDaily = await getRecordClosestToTimestamp(
-    dailyStarFinancials,
-    timestamp,
-    secondsInDay * 1.5
-  );
+  const closestDaily = await db
+    .select()
+    .from(starFinancials)
+    .where(
+      and(
+        eq(starFinancials.granularity, "daily"),
+        eq(starFinancials.timestamp, daySK)
+      )
+    )
+    .limit(1);
 
-  if (getDay(closestDaily?.SK) !== getDay(timestamp)) {
-    await db.put({
-      PK: dailyStarFinancials,
-      SK: daySK,
-      data,
-    });
+  if (closestDaily.length === 0 || getDay(closestDaily[0].timestamp) !== getDay(timestamp)) {
+    await db
+      .insert(starFinancials)
+      .values({
+        timestamp: daySK,
+        granularity: "daily",
+        financialsData: data,
+      })
+      .onConflictDoNothing();
     console.log(
       `storeStarFinancials: wrote daily record for ${new Date(
         daySK * 1000

@@ -11,11 +11,7 @@
 
 import { getCurrentUnixTimestamp } from "./utils/date";
 import { wrapScheduledLambda } from "./utils/shared/wrap";
-import {
-  hourlyAllocationBalances,
-  dailyAllocationBalances,
-} from "./peggedAssets/utils/getLastRecord";
-import storeNewAllocationBalances from "./peggedAssets/storePeggedAssets/storeNewPeggedBalances";
+import storeAllocationBalance from "./utils/shared/storeAllocationBalance";
 import allocations from "./allocationData/allocations";
 import { isActiveAllocation } from "./allocationData/types";
 import { fetchAllocationBalance } from "./adapters/index";
@@ -58,12 +54,10 @@ const handler = async (_event: any): Promise<void> => {
         return;
       }
 
-      await storeNewAllocationBalances(
+      await storeAllocationBalance(
         allocation,
         timestamp,
-        { balance },
-        hourlyAllocationBalances,
-        dailyAllocationBalances
+        { balance }
       );
     })
   );

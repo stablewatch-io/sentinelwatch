@@ -18,11 +18,7 @@ import {
   getCurrentUnixTimestamp,
   getTimestampAtStartOfDay,
 } from "./utils/date";
-import db from "./utils/shared/db";
-import {
-  hourlyAllocationPrices,
-  dailyAllocationPrices,
-} from "./peggedAssets/utils/getLastRecord";
+import { db, tokenPrices } from "./utils/shared/db";
 import { getPrices } from "./utils/getPrices";
 import { getCustomPrices } from "./adapters/prices";
 import allocations from "./allocationData/allocations";
@@ -37,7 +33,11 @@ const handler = async (_event: any): Promise<void> => {
     .filter(isActiveAllocation);
 
   // Deduplicate: price is per unique underlying token, not per allocation
-  const uniqueTokenIds = [...new Set(active.map((a) => a.underlying))];
+  // Include priceOverride tokens if set (for cross-chain pricing)
+  const allTokenIds = active.flatMap((a) => 
+    a.priceOverride ? [a.underlying, a.priceOverride] : [a.underlying]
+  );
+  const uniqueTokenIds = [...new Set(allTokenIds)];
 
   console.log(
     `storeAllocationPrices: fetching prices for ${uniqueTokenIds.length} unique token(s) ` +
@@ -78,22 +78,34 @@ const handler = async (_event: any): Promise<void> => {
   }
 
   // ----- Write hourly record -----
-  await db.put({
-    PK: hourlyAllocationPrices,
-    SK: timestamp,
-    prices,
-  });
+  await db
+    .insert(tokenPrices)
+    .values({
+      timestamp,
+      granularity: "hourly",
+      prices,
+    })
+    .onConflictDoUpdate({
+      target: [tokenPrices.granularity, tokenPrices.timestamp],
+      set: { prices },
+    });
 
   // ----- Write daily record (always overwrite so the last run of the day wins) -----
   // We do NOT use "first write only" here because the first hourly run of the day
   // may have adapter errors (returning 0 for newly-added tokens).  Overwriting on
   // each run means the daily record always reflects the most recent — and therefore
   // most complete — set of prices for that calendar day.
-  await db.put({
-    PK: dailyAllocationPrices,
-    SK: daySK,
-    prices,
-  });
+  await db
+    .insert(tokenPrices)
+    .values({
+      timestamp: daySK,
+      granularity: "daily",
+      prices,
+    })
+    .onConflictDoUpdate({
+      target: [tokenPrices.granularity, tokenPrices.timestamp],
+      set: { prices },
+    });
   console.log(
     `storeAllocationPrices: wrote/updated daily price record for ${new Date(daySK * 1000).toISOString().slice(0, 10)}`
   );

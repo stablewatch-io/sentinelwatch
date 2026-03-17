@@ -53,7 +53,7 @@ export async function fetchErc4626Price(
     vault.asset(),
   ]);
 
-  if (totalSupply === 0n) return 0;
+  if (totalSupply === BigInt(0)) return 0;
 
   // ethers v6 returns uint8 as bigint at runtime — convert explicitly
   const shareDecimals = Number(shareDecimalsRaw);
