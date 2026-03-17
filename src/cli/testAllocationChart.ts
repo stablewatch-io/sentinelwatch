@@ -66,19 +66,33 @@ async function fetchAllBalances() {
   console.log(`Processing ${active.length} active allocation(s) at timestamp ${timestamp}`);
   console.log(`Date: ${new Date(timestamp * 1000).toISOString()}\n`);
 
-  const balances: Record<string, { balance: string; error?: string }> = {};
+  const balances: Record<string, { balance: string; idleBalance?: string; error?: string }> = {};
   const errors: Array<{ id: string; error: string }> = [];
 
   await Promise.all(
     active.map(async (allocation) => {
       try {
-        const balance = await withTimeout(
+        const balanceResult = await withTimeout(
           fetchAllocationBalance(allocation),
           FETCH_TIMEOUT_MS,
           allocation.id
         );
-        balances[allocation.id] = { balance };
-        console.log(`✓ [${allocation.id}] balance=${balance}`);
+
+        // Handle idle balance allocations
+        if (typeof balanceResult === "object" && "idleBalance" in balanceResult) {
+          balances[allocation.id] = { 
+            balance: balanceResult.balance,
+            idleBalance: balanceResult.idleBalance
+          };
+          console.log(`✓ [${allocation.id}] balance=${balanceResult.balance}, idleBalance=${balanceResult.idleBalance}`);
+          
+          // Store idle balance separately for chart calculations
+          const idleId = `${allocation.id}-idle`;
+          balances[idleId] = { balance: balanceResult.idleBalance };
+        } else {
+          balances[allocation.id] = { balance: balanceResult };
+          console.log(`✓ [${allocation.id}] balance=${balanceResult}`);
+        }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         console.error(`✗ [${allocation.id}] FAILED: ${errorMsg}`);
@@ -110,9 +124,17 @@ async function fetchAllPrices() {
 
   const timestamp = getCurrentUnixTimestamp();
   const active = allocations.filter(isActiveAllocation);
-  const allTokenIds = active.flatMap((a) => 
-    a.priceOverride ? [a.underlying, a.priceOverride] : [a.underlying]
-  );
+  
+  // Collect all token IDs including idle price keys for hasIdle allocations
+  const allTokenIds = active.flatMap((a) => {
+    const baseIds = a.priceOverride ? [a.underlying, a.priceOverride] : [a.underlying];
+    // For hasIdle allocations, we need the idle price key as well
+    if (a.hasIdle) {
+      const priceKey = a.priceOverride || a.underlying;
+      return [...baseIds, `${priceKey}-idle`];
+    }
+    return baseIds;
+  });
   const uniqueTokenIds = [...new Set(allTokenIds)];
 
   console.log(`Fetching prices for ${uniqueTokenIds.length} unique token(s) from ${active.length} active allocation(s)`);
@@ -199,7 +221,7 @@ async function generateLatestChart(
     type: string;
     underlying: string;
     holdingWallet?: string;
-    containsIdle?: boolean;
+    hasIdle?: boolean;
     isLP?: boolean;
     isLending?: boolean;
     isYBS?: boolean;
@@ -215,7 +237,23 @@ async function generateLatestChart(
     const priceKey = allocation.priceOverride || allocation.underlying;
     const priceUSD = priceData.prices[priceKey] ?? 0;
     const rawBalance = Number(balanceInfo.balance);
-    const usdValue = rawBalance * priceUSD;
+    let usdValue = rawBalance * priceUSD;
+    let totalBalance = rawBalance;
+
+    // If this allocation has idle balances, fetch and add them
+    if (allocation.hasIdle) {
+      const idleId = `${allocation.id}-idle`;
+      const idleBalanceInfo = balanceData.balances[idleId];
+      
+      if (idleBalanceInfo && !idleBalanceInfo.error) {
+        const idlePriceKey = `${priceKey}-idle`;
+        const idlePriceUSD = priceData.prices[idlePriceKey] ?? 0;
+        const rawIdleBalance = Number(idleBalanceInfo.balance);
+
+        usdValue += rawIdleBalance * idlePriceUSD;
+        totalBalance += rawIdleBalance;
+      }
+    }
 
     entry.allocations[allocation.id] = { usdValue: round2(usdValue) };
 
@@ -226,7 +264,7 @@ async function generateLatestChart(
     details.push({
       id: allocation.id,
       star: allocation.star || "unknown",
-      balance: balanceInfo.balance,
+      balance: String(totalBalance),
       priceKey,
       price: priceUSD,
       usdValue: round2(usdValue),
@@ -237,7 +275,7 @@ async function generateLatestChart(
       type: allocation.type,
       underlying: allocation.underlying,
       holdingWallet: allocation.holdingWallet || undefined,
-      containsIdle: allocation.containsIdle || undefined,
+      hasIdle: allocation.hasIdle || undefined,
       isLP: allocation.isLP || undefined,
       isLending: allocation.isLending || undefined,
       isYBS: allocation.isYBS || undefined,

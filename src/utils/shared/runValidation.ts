@@ -127,12 +127,41 @@ async function getLatestAllocationChartData() {
     const priceKey = alloc.priceOverride || alloc.underlying;
     const price = prices[priceKey] || 0;
     const rawBalance = balance.balanceData.balance != null ? Number(balance.balanceData.balance) : 0;
-    const usdValue = rawBalance * price;
+    let usdValue = rawBalance * price;
+    let totalBalance = rawBalance;
+
+    // If this allocation has idle balances, fetch and add them
+    if (alloc.hasIdle && balance.idleAllocationId) {
+      const idleId = balance.idleAllocationId;
+      
+      const idleBalanceRecords = await db
+        .select()
+        .from(allocationBalances)
+        .where(
+          and(
+            eq(allocationBalances.allocationId, idleId),
+            eq(allocationBalances.granularity, "daily")
+          )
+        )
+        .orderBy(desc(allocationBalances.timestamp))
+        .limit(1);
+
+      if (idleBalanceRecords.length > 0) {
+        const idlePriceKey = `${priceKey}-idle`;
+        const idlePrice = prices[idlePriceKey] || 0;
+        const rawIdleBalance = idleBalanceRecords[0].balanceData.balance != null
+          ? Number(idleBalanceRecords[0].balanceData.balance)
+          : 0;
+
+        usdValue += rawIdleBalance * idlePrice;
+        totalBalance += rawIdleBalance;
+      }
+    }
 
     chartData.set(alloc.id, {
       id: alloc.id,
       star: alloc.star,
-      balance: String(rawBalance),
+      balance: String(totalBalance),
       priceKey,
       price,
       usdValue,
@@ -142,7 +171,7 @@ async function getLatestAllocationChartData() {
       type: alloc.type,
       underlying: alloc.underlying,
       holdingWallet: alloc.holdingWallet,
-      containsIdle: alloc.containsIdle,
+      hasIdle: alloc.hasIdle,
       isLP: alloc.isLP,
       isLending: alloc.isLending,
       isYBS: alloc.isYBS,
@@ -249,7 +278,7 @@ export async function runValidation(): Promise<any> {
           underlying: chartEntry.underlying,
           holdingWallet: chartEntry.holdingWallet,
           protocol: chartEntry.protocol,
-          containsIdle: chartEntry.containsIdle,
+          hasIdle: chartEntry.hasIdle,
           isLP: chartEntry.isLP,
         },
         discrepancy: {

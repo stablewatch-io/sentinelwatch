@@ -34,9 +34,16 @@ const handler = async (_event: any): Promise<void> => {
 
   // Deduplicate: price is per unique underlying token, not per allocation
   // Include priceOverride tokens if set (for cross-chain pricing)
-  const allTokenIds = active.flatMap((a) => 
-    a.priceOverride ? [a.underlying, a.priceOverride] : [a.underlying]
-  );
+  // For hasIdle allocations, also include the idle price key
+  const allTokenIds = active.flatMap((a) => {
+    const baseIds = a.priceOverride ? [a.underlying, a.priceOverride] : [a.underlying];
+    // For hasIdle allocations, we need the idle price key as well
+    if (a.hasIdle) {
+      const priceKey = a.priceOverride || a.underlying;
+      return [...baseIds, `${priceKey}-idle`];
+    }
+    return baseIds;
+  });
   const uniqueTokenIds = [...new Set(allTokenIds)];
 
   console.log(

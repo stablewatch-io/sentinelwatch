@@ -22,6 +22,10 @@ export type Token = {
   decimals?: number | null;
   /** CoinGecko id — for reference / possible future use. */
   coingeckoId?: string | null;
+  /** For LP tokens with idle: reference to the allocated component token. */
+  allocatedAddress?: string;
+  /** For LP tokens with idle: reference to the idle component token. */
+  idleAddress?: string;
 };
 
 /**
@@ -68,6 +72,13 @@ export const tokens: Record<string, Token> = {
     address:    "0x6c3ea9036406852006290770BEdFcAbA0e23A0e8",
     decimals:   6,
   },
+  "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7": {
+    id:         "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    name:       "Tether USD",
+    blockchain: "ethereum",
+    address:    "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    decimals:   6,
+  },
   "ethereum:0xe7dF13b8e3d6740fe17CBE928C7334243d86c92f": {
     id:         "ethereum:0xe7dF13b8e3d6740fe17CBE928C7334243d86c92f",
     name:       "Spark USDT",
@@ -104,18 +115,22 @@ export const tokens: Record<string, Token> = {
     decimals:   6,
   },
   "ethereum:0xA632D59b9B804a956BfaA9b48Af3A1b74808FC1f": {
-    id:         "ethereum:0xA632D59b9B804a956BfaA9b48Af3A1b74808FC1f",
-    name:       "Spark.fi PYUSD Reserve",
-    blockchain: "ethereum",
-    address:    "0xA632D59b9B804a956BfaA9b48Af3A1b74808FC1f",
-    decimals:   18,
+    id:                "ethereum:0xA632D59b9B804a956BfaA9b48Af3A1b74808FC1f",
+    name:              "Spark.fi PYUSD Reserve",
+    blockchain:        "ethereum",
+    address:           "0xA632D59b9B804a956BfaA9b48Af3A1b74808FC1f",
+    decimals:          18,
+    allocatedAddress:  "ethereum:0x6c3ea9036406852006290770BEdFcAbA0e23A0e8",
+    idleAddress:       "ethereum:0xdc035d45d973e3ec169d2276ddab16f1e407384f",
   },
   "ethereum:0x00836Fe54625BE242BcFA286207795405ca4fD10": {
-    id:         "ethereum:0x00836Fe54625BE242BcFA286207795405ca4fD10",
-    name:       "Spark.fi USDT Reserve",
-    blockchain: "ethereum",
-    address:    "0x00836Fe54625BE242BcFA286207795405ca4fD10",
-    decimals:   18,
+    id:                "ethereum:0x00836Fe54625BE242BcFA286207795405ca4fD10",
+    name:              "Spark.fi USDT Reserve",
+    blockchain:        "ethereum",
+    address:           "0x00836Fe54625BE242BcFA286207795405ca4fD10",
+    decimals:          18,
+    allocatedAddress:  "ethereum:0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    idleAddress:       "ethereum:0xa3931d71877c0e7a3148cb7eb4463524fec27fbd",
   },
   "ethereum:0x56A76b428244a50513ec81e225a293d128fd581D": {
     id:         "ethereum:0x56A76b428244a50513ec81e225a293d128fd581D",

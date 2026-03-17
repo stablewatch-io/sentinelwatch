@@ -12,6 +12,7 @@ export const allocationBalances = pgTable(
     timestamp: bigint("timestamp", { mode: "number" }).notNull(),
     granularity: text("granularity", { enum: ["hourly", "daily"] }).notNull(),
     balanceData: jsonb("balance_data").notNull().$type<Record<string, any>>(),
+    idleAllocationId: text("idle_allocation_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({

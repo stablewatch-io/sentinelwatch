@@ -81,7 +81,7 @@ interface AllocationDetail {
   type: string;
   underlying: string;
   holdingWallet?: string;
-  containsIdle?: boolean;
+  hasIdle?: boolean;
   isLP?: boolean;
   isLending?: boolean;
   isYBS?: boolean;
@@ -122,7 +122,7 @@ interface ValidationResult {
     underlying: string;
     holdingWallet?: string;
     protocol: string;
-    containsIdle?: boolean;
+    hasIdle?: boolean;
     isLP?: boolean;
   };
   discrepancy?: {
@@ -329,7 +329,7 @@ function validateAllocations(
         underlying: chartDetail.underlying,
         holdingWallet: chartDetail.holdingWallet,
         protocol: chartDetail.protocol,
-        containsIdle: chartDetail.containsIdle,
+        hasIdle: chartDetail.hasIdle,
         isLP: chartDetail.isLP,
       },
       discrepancy: {
@@ -349,8 +349,8 @@ function validateAllocations(
       console.log(`      Difference:         $${difference.toLocaleString()} (${percentDiff.toFixed(2)}%)`);
       
       // Add helpful context about potential causes
-      if (chartDetail.containsIdle) {
-        console.log(`      ⚠ Note: Config indicates containsIdle=true. Chart may be including idle assets.`);
+      if (chartDetail.hasIdle) {
+        console.log(`      ⚠ Note: Config indicates hasIdle=true. Chart may be including idle assets.`);
       }
       if (chartDetail.isLP) {
         console.log(`      ⚠ Note: This is an LP position. Valuation methodology may differ.`);
@@ -442,7 +442,7 @@ function checkUnmatchedChartEntries(
     console.log(`      Underlying: ${entry.underlying}`);
     console.log(`      Holding Wallet: ${entry.holdingWallet || "N/A"}`);
     console.log(`      Protocol: ${entry.protocol} | Network: ${entry.blockchain}`);
-    if (entry.containsIdle) console.log(`      ⚠ Contains Idle Assets`);
+    if (entry.hasIdle) console.log(`      ⚠ Contains Idle Assets`);
     if (entry.isLP) console.log(`      ⚠ LP Position`);
     console.log();
   }
@@ -558,7 +558,7 @@ async function main() {
         blockchain: e.blockchain,
         type: e.type,
         priceKey: e.priceKey,
-        containsIdle: e.containsIdle,
+        hasIdle: e.hasIdle,
         isLP: e.isLP,
       })),
     };

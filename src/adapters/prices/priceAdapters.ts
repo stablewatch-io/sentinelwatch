@@ -89,6 +89,16 @@ type UniswapV3PositionAdapter = {
    */
 };
 
+type IdlePriceAdapter = {
+  type: "idlePrice";
+  /**
+   * For allocations with hasIdle=true, returns {price, idlePrice}.
+   * Both the active and idle components use these separate prices.
+   */
+  price: number;
+  idlePrice: number;
+};
+
 export type PriceAdapterConfig =
   | ChainlinkFeedAdapter
   | ChronicleVaoAdapter
@@ -96,7 +106,8 @@ export type PriceAdapterConfig =
   | AaveOracleAdapter
   | MorphoVaultAdapter
   | HardcodedAdapter
-  | UniswapV3PositionAdapter;
+  | UniswapV3PositionAdapter
+  | IdlePriceAdapter;
 
 /**
  * Custom price adapters for tokens not covered by the DefiLlama API.
@@ -181,27 +192,11 @@ export const priceAdapters: Record<string, PriceAdapterConfig> = {
     oracleAddress: "0x8105f69D9C41644c6A0803fDA7D03Aa70996cFD9",
   },
 
-  // spDAI (Spark DAI) — underlying: DAI
-  "ethereum:0x4DEDf26112B3Ec8eC46e7E31EA5e123490B05B8B": {
-    type: "aaveOracle",
-    chain: "ethereum",
-    aTokenAddress: "0x4DEDf26112B3Ec8eC46e7E31EA5e123490B05B8B",
-    oracleAddress: "0x8105f69D9C41644c6A0803fDA7D03Aa70996cFD9",
-  },
-
   // spPYUSD (Spark PYUSD) — underlying: PYUSD
   "ethereum:0x779224df1c756b4EDD899854F32a53E8c2B2ce5d": {
     type: "aaveOracle",
     chain: "ethereum",
     aTokenAddress: "0x779224df1c756b4EDD899854F32a53E8c2B2ce5d",
-    oracleAddress: "0x8105f69D9C41644c6A0803fDA7D03Aa70996cFD9",
-  },
-
-  // spUSDS (Spark USDS) — underlying: USDS
-  "ethereum:0xC02aB1A5eaA8d1B114EF786D9bde108cD4364359": {
-    type: "aaveOracle",
-    chain: "ethereum",
-    aTokenAddress: "0xC02aB1A5eaA8d1B114EF786D9bde108cD4364359",
     oracleAddress: "0x8105f69D9C41644c6A0803fDA7D03Aa70996cFD9",
   },
 
@@ -312,6 +307,38 @@ export const priceAdapters: Record<string, PriceAdapterConfig> = {
   // Uniswap V3 LP AUSD/USDC (Grove) — synthetic token ID
   "ethereum:uniswap-v3-lp-grove-ausd-usdc": {
     type: "uniswapV3Position",
+  },
+
+  // ── Idle Price Adapters ───────────────────────────────────────────────────
+  // For allocations with hasIdle=true, price adapters return both active and idle prices.
+  // Both set to 1 for stablecoin-based allocations.
+
+  // Spark DAI (Idle) — spDAI token
+  "ethereum:0x4DEDf26112B3Ec8eC46e7E31EA5e123490B05B8B": {
+    type: "idlePrice",
+    price: 1,
+    idlePrice: 1,
+  },
+
+  // Spark USDS (Idle) — spUSDS token
+  "ethereum:0xC02aB1A5eaA8d1B114EF786D9bde108cD4364359": {
+    type: "idlePrice",
+    price: 1,
+    idlePrice: 1,
+  },
+
+  // Spark.fi PYUSD Reserve (Idle) — Curve LP token
+  "ethereum:0xA632D59b9B804a956BfaA9b48Af3A1b74808FC1f": {
+    type: "idlePrice",
+    price: 1,
+    idlePrice: 1,
+  },
+
+  // Spark.fi USDT Reserve (Idle) — Curve LP token
+  "ethereum:0x00836Fe54625BE242BcFA286207795405ca4fD10": {
+    type: "idlePrice",
+    price: 1,
+    idlePrice: 1,
   },
 };
 

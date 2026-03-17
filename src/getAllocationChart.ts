@@ -165,14 +165,39 @@ export async function craftAllocationChartResponse(
         if (daySK < startTs) continue;
 
         const priceUSD = priceKey ? getPriceAt(priceKey, daySK) : 0;
-        // balance is stored as a decimal string ("86639871.842302") to preserve
-        // full on-chain precision; convert to number only here for arithmetic.
         const rawBalance =
           item.balanceData.balance != null ? Number(item.balanceData.balance) : 0;
 
-        // Keep full precision for totals accumulation; round per-allocation
-        // value to cents for display.
-        const usdValue = rawBalance * priceUSD;
+        let usdValue = rawBalance * priceUSD;
+
+        // If this allocation has idle balances, fetch and add them
+        if (allocation.hasIdle && item.idleAllocationId) {
+          const idleId = item.idleAllocationId;
+          
+          // Fetch the idle balance entry for this timestamp
+          const idleBalance = await db
+            .select()
+            .from(allocationBalances)
+            .where(
+              and(
+                eq(allocationBalances.allocationId, idleId),
+                eq(allocationBalances.granularity, "daily"),
+                eq(allocationBalances.timestamp, item.timestamp)
+              )
+            )
+            .limit(1);
+
+          if (idleBalance.length > 0) {
+            const idlePriceKey = `${priceKey}-idle`;
+            const idlePriceUSD = getPriceAt(idlePriceKey, daySK);
+            const rawIdleBalance =
+              idleBalance[0].balanceData.balance != null
+                ? Number(idleBalance[0].balanceData.balance)
+                : 0;
+
+            usdValue += rawIdleBalance * idlePriceUSD;
+          }
+        }
 
         if (!byDay[daySK]) {
           byDay[daySK] = { allocations: {}, totals: {} };

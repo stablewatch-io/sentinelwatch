@@ -100,7 +100,7 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
     isLending?: boolean | null;
     isLP?: boolean | null;
     isMerkle?: boolean | null;
-    containsIdle?: boolean | null;
+    hasIdle?: boolean | null;
     hasRRC?: boolean | null;
     market?: string | null;
     startDate?: string | null;
@@ -151,7 +151,38 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
       const rawBalance = latestBalance.balanceData.balance != null 
         ? Number(latestBalance.balanceData.balance) 
         : 0;
-      const usdValue = rawBalance * priceUSD;
+      let usdValue = rawBalance * priceUSD;
+      let totalBalance = rawBalance;
+
+      // If this allocation has idle balances, fetch and add them
+      if (allocation.hasIdle && latestBalance.idleAllocationId) {
+        const idleId = latestBalance.idleAllocationId;
+        
+        const lastDailyIdleBalance = await getLastAllocationBalance(idleId, "daily");
+        const lastHourlyIdleBalance = await getLastAllocationBalance(idleId, "hourly");
+
+        let latestIdleBalance = lastDailyIdleBalance;
+        if (lastDailyIdleBalance && lastHourlyIdleBalance) {
+          if (
+            lastHourlyIdleBalance.timestamp > lastDailyIdleBalance.timestamp &&
+            lastDailyIdleBalance.timestamp + secondsInHour * 25 > lastHourlyIdleBalance.timestamp
+          ) {
+            latestIdleBalance = lastHourlyIdleBalance;
+          }
+        }
+
+        if (latestIdleBalance) {
+          const idlePriceKey = `${priceKey}-idle`;
+          const idlePriceUSD = prices[idlePriceKey] ?? 0;
+          const rawIdleBalance =
+            latestIdleBalance.balanceData.balance != null
+              ? Number(latestIdleBalance.balanceData.balance)
+              : 0;
+
+          usdValue += rawIdleBalance * idlePriceUSD;
+          totalBalance += rawIdleBalance;
+        }
+      }
 
       // Calculate yesterday's USD value for change
       const yesterdayBalance = await db
@@ -172,7 +203,35 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
         const yesterdayRawBalance = yesterdayBalance[0].balanceData.balance != null
           ? Number(yesterdayBalance[0].balanceData.balance)
           : 0;
-        const yesterdayUsdValue = yesterdayRawBalance * yesterdayPriceUSD;
+        let yesterdayUsdValue = yesterdayRawBalance * yesterdayPriceUSD;
+
+        // Add yesterday's idle balance if applicable
+        if (allocation.hasIdle && yesterdayBalance[0].idleAllocationId) {
+          const yesterdayIdleId = yesterdayBalance[0].idleAllocationId;
+          const yesterdayIdleBalance = await db
+            .select()
+            .from(allocationBalances)
+            .where(
+              and(
+                eq(allocationBalances.allocationId, yesterdayIdleId),
+                eq(allocationBalances.granularity, "daily"),
+                eq(allocationBalances.timestamp, yesterdayDayStart)
+              )
+            )
+            .limit(1);
+
+          if (yesterdayIdleBalance.length > 0) {
+            const idlePriceKey = `${priceKey}-idle`;
+            const yesterdayIdlePriceUSD = yesterdayPricesMap[idlePriceKey] ?? 0;
+            const yesterdayRawIdleBalance =
+              yesterdayIdleBalance[0].balanceData.balance != null
+                ? Number(yesterdayIdleBalance[0].balanceData.balance)
+                : 0;
+
+            yesterdayUsdValue += yesterdayRawIdleBalance * yesterdayIdlePriceUSD;
+          }
+        }
+
         usdValueChange = usdValue - yesterdayUsdValue;
       }
 
@@ -222,12 +281,12 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
         isLending: allocation.isLending,
         isLP: allocation.isLP,
         isMerkle: allocation.isMerkle,
-        containsIdle: allocation.containsIdle,
+        hasIdle: allocation.hasIdle,
         hasRRC: allocation.hasRRC,
         market: allocation.market,
         startDate: allocation.startDate,
         underlying: underlyingInfo,
-        balance: String(rawBalance),
+        balance: String(totalBalance),
         price: priceUSD,
         usdValue: round2(usdValue),
         usdValueChange: round2(usdValueChange),

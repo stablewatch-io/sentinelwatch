@@ -103,7 +103,36 @@ export async function craftLatestAllocationChartResponse(
       const priceUSD = priceKey ? prices[priceKey] ?? 0 : 0;
       const rawBalance =
         latestBalance.balanceData.balance != null ? Number(latestBalance.balanceData.balance) : 0;
-      const usdValue = rawBalance * priceUSD;
+      let usdValue = rawBalance * priceUSD;
+
+      // If this allocation has idle balances, fetch and add them
+      if (allocation.hasIdle && latestBalance.idleAllocationId) {
+        const idleId = latestBalance.idleAllocationId;
+        
+        const lastDailyIdleBalance = await getLastAllocationBalance(idleId, "daily");
+        const lastHourlyIdleBalance = await getLastAllocationBalance(idleId, "hourly");
+
+        let latestIdleBalance = lastDailyIdleBalance;
+        if (lastDailyIdleBalance && lastHourlyIdleBalance) {
+          if (
+            lastHourlyIdleBalance.timestamp > lastDailyIdleBalance.timestamp &&
+            lastDailyIdleBalance.timestamp + secondsInHour * 25 > lastHourlyIdleBalance.timestamp
+          ) {
+            latestIdleBalance = lastHourlyIdleBalance;
+          }
+        }
+
+        if (latestIdleBalance) {
+          const idlePriceKey = `${priceKey}-idle`;
+          const idlePriceUSD = prices[idlePriceKey] ?? 0;
+          const rawIdleBalance =
+            latestIdleBalance.balanceData.balance != null
+              ? Number(latestIdleBalance.balanceData.balance)
+              : 0;
+
+          usdValue += rawIdleBalance * idlePriceUSD;
+        }
+      }
 
       entry.allocations[allocation.id] = { usdValue: round2(usdValue) };
 

@@ -7,14 +7,16 @@ import type { AllocationConfig } from "../../allocationData/types";
  * Persist a fresh hourly balance snapshot for one allocation and, if no daily
  * record exists yet for today, promote it to the daily table as well.
  *
- * @param allocation     - allocation descriptor from allocationData/allocations.ts
- * @param unixTimestamp  - current unix timestamp (seconds)
- * @param balanceData    - arbitrary balance payload to store in JSONB
+ * @param allocation        - allocation descriptor from allocationData/allocations.ts
+ * @param unixTimestamp     - current unix timestamp (seconds)
+ * @param balanceData       - arbitrary balance payload to store in JSONB
+ * @param idleAllocationId  - optional reference to the corresponding idle allocation entry
  */
 export default async function storeAllocationBalance(
   allocation: AllocationConfig,
   unixTimestamp: number,
-  balanceData: Record<string, any>
+  balanceData: Record<string, any>,
+  idleAllocationId?: string
 ): Promise<void> {
   const daySK = getTimestampAtStartOfDay(unixTimestamp);
 
@@ -31,6 +33,7 @@ export default async function storeAllocationBalance(
       timestamp: unixTimestamp,
       granularity: "hourly",
       balanceData,
+      idleAllocationId: idleAllocationId || null,
     })
     .onConflictDoUpdate({
       target: [
@@ -38,7 +41,7 @@ export default async function storeAllocationBalance(
         allocationBalances.granularity,
         allocationBalances.timestamp,
       ],
-      set: { balanceData },
+      set: { balanceData, idleAllocationId: idleAllocationId || null },
     });
   console.log(`[${allocation.id}] Stored hourly balance at ${unixTimestamp}`);
 
@@ -64,6 +67,7 @@ export default async function storeAllocationBalance(
         timestamp: daySK,
         granularity: "daily",
         balanceData,
+        idleAllocationId: idleAllocationId || null,
       })
       .onConflictDoNothing();
     console.log(

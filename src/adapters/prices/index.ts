@@ -66,6 +66,12 @@ export async function getCustomPrices(
           result[id] = adapter.price;
         } else if (adapter.type === "uniswapV3Position") {
           result[id] = 1.0;  // Balance adapter returns USD value directly
+        } else if (adapter.type === "idlePrice") {
+          // Store both active and idle prices
+          result[id] = adapter.price;
+          result[`${id}-idle`] = adapter.idlePrice;
+          console.log(`getCustomPrices [${id}]: price=${adapter.price}, idlePrice=${adapter.idlePrice}`);
+          return; // Skip the generic logging below
         }
         console.log(`getCustomPrices [${id}]: price=${result[id]}`);
       } catch (err) {

@@ -1,0 +1,1 @@
+ALTER TABLE "allocation_balances" ADD COLUMN "idle_allocation_id" text;

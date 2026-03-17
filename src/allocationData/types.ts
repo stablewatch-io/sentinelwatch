@@ -48,7 +48,7 @@ export type AllocationConfig = {
   /** True if this allocation is an LP position. */
   isLP?: boolean | null;
   /** True if some portion sits idle (not deployed). */
-  containsIdle?: boolean | null;
+  hasIdle?: boolean | null;
   /** True if this allocation has RRC (Risk Review Committee) oversight. */
   hasRRC?: boolean | null;
   market?: string | null;

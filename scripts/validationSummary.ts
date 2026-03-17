@@ -104,7 +104,7 @@ function main() {
       console.log(`      Token: ${symbol}`);
       console.log(`      Chart is $${Math.abs(diff).toLocaleString()} ${direction} (${Math.abs(pct).toFixed(1)}%)`);
       
-      if (m.chart_entry?.containsIdle) {
+      if (m.chart_entry?.hasIdle) {
         console.log(`      💡 Hint: Contains idle assets`);
       }
       if (m.chart_entry?.isLP) {

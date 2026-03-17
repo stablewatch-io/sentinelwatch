@@ -42,23 +42,67 @@ const handler = async (_event: any): Promise<void> => {
 
   await Promise.all(
     active.map(async (allocation) => {
-      let balance: string;
+      let balanceResult: string | { balance: string; idleBalance: string };
+      
       try {
-        balance = await withTimeout(
+        balanceResult = await withTimeout(
           fetchAllocationBalance(allocation),
           FETCH_TIMEOUT_MS,
           allocation.id
         );
       } catch (err) {
         console.error(`[${allocation.id}] Failed to fetch balance (timeout or error):`, err);
+        
+        // Skip allocations with hasIdle=true if adapter fails
+        if (allocation.hasIdle) {
+          console.error(
+            `[${allocation.id}] Skipping hasIdle allocation due to adapter error`
+          );
+        }
         return;
       }
 
-      await storeAllocationBalance(
-        allocation,
-        timestamp,
-        { balance }
-      );
+      // Handle idle balance allocations
+      if (typeof balanceResult === "object" && "idleBalance" in balanceResult) {
+        if (!allocation.hasIdle) {
+          console.error(
+            `[${allocation.id}] Adapter returned idle balance but allocation does not have hasIdle=true. Skipping.`
+          );
+          return;
+        }
+
+        const { balance, idleBalance } = balanceResult;
+        const idleAllocationId = `${allocation.id}-idle`;
+
+        // Store the active balance entry with reference to idle
+        await storeAllocationBalance(
+          allocation,
+          timestamp,
+          { balance },
+          idleAllocationId
+        );
+
+        // Store the idle balance entry as a separate allocation
+        await storeAllocationBalance(
+          { ...allocation, id: idleAllocationId },
+          timestamp,
+          { balance: idleBalance }
+        );
+      } else {
+        // Standard single-balance allocation
+        if (allocation.hasIdle) {
+          console.error(
+            `[${allocation.id}] Allocation has hasIdle=true but adapter returned string. Skipping.`
+          );
+          return;
+        }
+
+        await storeAllocationBalance(
+          allocation,
+          timestamp,
+          { balance: balanceResult }
+        );
+      }
     })
   );
 
