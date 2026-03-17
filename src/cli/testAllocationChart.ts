@@ -202,7 +202,7 @@ async function generateLatestChart(
   console.log(`Day timestamp: ${daySK} (${new Date(daySK * 1000).toISOString()})\n`);
 
   type Entry = {
-    allocations: Record<string, { usdValue: number }>;
+    allocations: Record<string, { usdValue: number; idleUsdValue?: number }>;
     totals: Record<string, number>;
   };
 
@@ -214,6 +214,8 @@ async function generateLatestChart(
     priceKey: string;
     price: number;
     usdValue: number;
+    idleBalance?: string;
+    idleUsdValue?: number;
     // Enhanced metadata for validation
     name: string;
     protocol: string;
@@ -237,10 +239,12 @@ async function generateLatestChart(
     const priceKey = allocation.priceOverride || allocation.underlying;
     const priceUSD = priceData.prices[priceKey] ?? 0;
     const rawBalance = Number(balanceInfo.balance);
-    let usdValue = rawBalance * priceUSD;
-    let totalBalance = rawBalance;
+    const usdValue = rawBalance * priceUSD;
+    
+    let rawIdleBalance = 0;
+    let idleUsdValue = 0;
 
-    // If this allocation has idle balances, fetch and add them
+    // If this allocation has idle balances, fetch them separately
     if (allocation.hasIdle) {
       const idleId = `${allocation.id}-idle`;
       const idleBalanceInfo = balanceData.balances[idleId];
@@ -248,23 +252,27 @@ async function generateLatestChart(
       if (idleBalanceInfo && !idleBalanceInfo.error) {
         const idlePriceKey = `${priceKey}-idle`;
         const idlePriceUSD = priceData.prices[idlePriceKey] ?? 0;
-        const rawIdleBalance = Number(idleBalanceInfo.balance);
-
-        usdValue += rawIdleBalance * idlePriceUSD;
-        totalBalance += rawIdleBalance;
+        rawIdleBalance = Number(idleBalanceInfo.balance);
+        idleUsdValue = rawIdleBalance * idlePriceUSD;
       }
     }
 
-    entry.allocations[allocation.id] = { usdValue: round2(usdValue) };
+    const allocationEntry: { usdValue: number; idleUsdValue?: number } = { 
+      usdValue: round2(usdValue) 
+    };
+    if (allocation.hasIdle) {
+      allocationEntry.idleUsdValue = round2(idleUsdValue);
+    }
+    entry.allocations[allocation.id] = allocationEntry;
 
     if (allocation.star) {
-      entry.totals[allocation.star] = (entry.totals[allocation.star] ?? 0) + usdValue;
+      entry.totals[allocation.star] = (entry.totals[allocation.star] ?? 0) + usdValue + idleUsdValue;
     }
 
-    details.push({
+    const detail: any = {
       id: allocation.id,
       star: allocation.star || "unknown",
-      balance: String(totalBalance),
+      balance: String(rawBalance),
       priceKey,
       price: priceUSD,
       usdValue: round2(usdValue),
@@ -279,10 +287,19 @@ async function generateLatestChart(
       isLP: allocation.isLP || undefined,
       isLending: allocation.isLending || undefined,
       isYBS: allocation.isYBS || undefined,
-    });
+    };
+
+    // Add idle fields if applicable
+    if (allocation.hasIdle) {
+      detail.idleBalance = String(rawIdleBalance);
+      detail.idleUsdValue = round2(idleUsdValue);
+    }
+
+    details.push(detail);
 
     const status = priceUSD > 0 ? "✓" : "⚠";
-    console.log(`  ${status} [${allocation.id}] balance=${rawBalance.toFixed(6)}, price=$${priceUSD}, usd=$${round2(usdValue)}`);
+    const idleInfo = allocation.hasIdle ? `, idle=$${round2(idleUsdValue)}` : "";
+    console.log(`  ${status} [${allocation.id}] balance=${rawBalance.toFixed(6)}, price=$${priceUSD}, usd=$${round2(usdValue)}${idleInfo}`);
   }
 
   // Round totals to cents

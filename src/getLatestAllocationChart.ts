@@ -63,7 +63,7 @@ export async function craftLatestAllocationChartResponse(
 
   // ----- Aggregate latest balances -----
   type Entry = {
-    allocations: Record<string, { usdValue: number }>;
+    allocations: Record<string, { usdValue: number; idleUsdValue?: number }>;
     totals: Record<string, number>;
   };
 
@@ -103,9 +103,10 @@ export async function craftLatestAllocationChartResponse(
       const priceUSD = priceKey ? prices[priceKey] ?? 0 : 0;
       const rawBalance =
         latestBalance.balanceData.balance != null ? Number(latestBalance.balanceData.balance) : 0;
-      let usdValue = rawBalance * priceUSD;
+      const usdValue = rawBalance * priceUSD;
+      let idleUsdValue = 0;
 
-      // If this allocation has idle balances, fetch and add them
+      // If this allocation has idle balances, fetch them separately
       if (allocation.hasIdle && latestBalance.idleAllocationId) {
         const idleId = latestBalance.idleAllocationId;
         
@@ -130,15 +131,21 @@ export async function craftLatestAllocationChartResponse(
               ? Number(latestIdleBalance.balanceData.balance)
               : 0;
 
-          usdValue += rawIdleBalance * idlePriceUSD;
+          idleUsdValue = rawIdleBalance * idlePriceUSD;
         }
       }
 
-      entry.allocations[allocation.id] = { usdValue: round2(usdValue) };
+      const allocationEntry: { usdValue: number; idleUsdValue?: number } = { 
+        usdValue: round2(usdValue) 
+      };
+      if (allocation.hasIdle) {
+        allocationEntry.idleUsdValue = round2(idleUsdValue);
+      }
+      entry.allocations[allocation.id] = allocationEntry;
 
       if (allocation.star) {
         entry.totals[allocation.star] =
-          (entry.totals[allocation.star] ?? 0) + usdValue;
+          (entry.totals[allocation.star] ?? 0) + usdValue + idleUsdValue;
       }
     })
   );

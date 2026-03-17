@@ -114,7 +114,7 @@ export async function craftAllocationChartResponse(
   // ----- Aggregate per calendar day -----
   type DayEntry = {
     /** usdValue per allocation — rounded to cents at write time */
-    allocations: Record<string, { usdValue: number }>;
+    allocations: Record<string, { usdValue: number; idleUsdValue?: number }>;
     /**
      * Accumulated unrounded USD per "star" group.
      * Rounded to cents only when serialised in the final response.
@@ -168,9 +168,10 @@ export async function craftAllocationChartResponse(
         const rawBalance =
           item.balanceData.balance != null ? Number(item.balanceData.balance) : 0;
 
-        let usdValue = rawBalance * priceUSD;
+        const usdValue = rawBalance * priceUSD;
+        let idleUsdValue = 0;
 
-        // If this allocation has idle balances, fetch and add them
+        // If this allocation has idle balances, fetch them separately
         if (allocation.hasIdle && item.idleAllocationId) {
           const idleId = item.idleAllocationId;
           
@@ -195,7 +196,7 @@ export async function craftAllocationChartResponse(
                 ? Number(idleBalance[0].balanceData.balance)
                 : 0;
 
-            usdValue += rawIdleBalance * idlePriceUSD;
+            idleUsdValue = rawIdleBalance * idlePriceUSD;
           }
         }
 
@@ -203,11 +204,17 @@ export async function craftAllocationChartResponse(
           byDay[daySK] = { allocations: {}, totals: {} };
         }
 
-        byDay[daySK].allocations[allocation.id] = { usdValue: round2(usdValue) };
+        const allocationEntry: { usdValue: number; idleUsdValue?: number } = { 
+          usdValue: round2(usdValue) 
+        };
+        if (allocation.hasIdle) {
+          allocationEntry.idleUsdValue = round2(idleUsdValue);
+        }
+        byDay[daySK].allocations[allocation.id] = allocationEntry;
 
         if (star) {
           byDay[daySK].totals[star] =
-            (byDay[daySK].totals[star] ?? 0) + usdValue;
+            (byDay[daySK].totals[star] ?? 0) + usdValue + idleUsdValue;
         }
       }
     })

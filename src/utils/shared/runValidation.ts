@@ -127,10 +127,12 @@ async function getLatestAllocationChartData() {
     const priceKey = alloc.priceOverride || alloc.underlying;
     const price = prices[priceKey] || 0;
     const rawBalance = balance.balanceData.balance != null ? Number(balance.balanceData.balance) : 0;
-    let usdValue = rawBalance * price;
-    let totalBalance = rawBalance;
+    const usdValue = rawBalance * price;
+    
+    let rawIdleBalance = 0;
+    let idleUsdValue = 0;
 
-    // If this allocation has idle balances, fetch and add them
+    // If this allocation has idle balances, fetch them separately
     if (alloc.hasIdle && balance.idleAllocationId) {
       const idleId = balance.idleAllocationId;
       
@@ -149,22 +151,24 @@ async function getLatestAllocationChartData() {
       if (idleBalanceRecords.length > 0) {
         const idlePriceKey = `${priceKey}-idle`;
         const idlePrice = prices[idlePriceKey] || 0;
-        const rawIdleBalance = idleBalanceRecords[0].balanceData.balance != null
+        rawIdleBalance = idleBalanceRecords[0].balanceData.balance != null
           ? Number(idleBalanceRecords[0].balanceData.balance)
           : 0;
 
-        usdValue += rawIdleBalance * idlePrice;
-        totalBalance += rawIdleBalance;
+        idleUsdValue = rawIdleBalance * idlePrice;
       }
     }
+
+    // For validation comparison, use combined USD value
+    const totalUsdValue = usdValue + idleUsdValue;
 
     chartData.set(alloc.id, {
       id: alloc.id,
       star: alloc.star,
-      balance: String(totalBalance),
+      balance: String(rawBalance),
       priceKey,
       price,
-      usdValue,
+      usdValue: totalUsdValue,
       name: alloc.name,
       protocol: alloc.protocol,
       blockchain: alloc.blockchain,
