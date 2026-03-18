@@ -110,7 +110,6 @@ const allocations: AllocationConfig[] = [
     type: "allocation",
     isLending: true,
     hasIdle: true,
-    isIdle: true,
     hasRRC: true,
     holdingWallet: ALM_ADDRESSES.spark_ethereum,
     module: "sparklendSupplyWithIdle",
