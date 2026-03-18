@@ -239,7 +239,7 @@ async function generateLatestChart(
     const priceKey = allocation.priceOverride || allocation.underlying;
     const priceUSD = priceData.prices[priceKey] ?? 0;
     const rawBalance = Number(balanceInfo.balance);
-    const usdValue = rawBalance * priceUSD;
+    let usdValue = rawBalance * priceUSD;
     
     let rawIdleBalance = 0;
     let idleUsdValue = 0;
@@ -257,10 +257,16 @@ async function generateLatestChart(
       }
     }
 
+    // If allocation is marked as idle (e.g., USDS/sUSDS POL), move all value to idleUsdValue
+    if (allocation.isIdle) {
+      idleUsdValue = usdValue + idleUsdValue;
+      usdValue = 0;
+    }
+
     const allocationEntry: { usdValue: number; idleUsdValue?: number } = { 
       usdValue: round2(usdValue) 
     };
-    if (allocation.hasIdle) {
+    if (allocation.hasIdle || allocation.isIdle) {
       allocationEntry.idleUsdValue = round2(idleUsdValue);
     }
     entry.allocations[allocation.id] = allocationEntry;

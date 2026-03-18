@@ -154,7 +154,7 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
       const rawBalance = latestBalance.balanceData.balance != null 
         ? Number(latestBalance.balanceData.balance) 
         : 0;
-      const usdValue = rawBalance * priceUSD;
+      let usdValue = rawBalance * priceUSD;
       
       let rawIdleBalance = 0;
       let idleUsdValue = 0;
@@ -188,6 +188,12 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
         }
       }
 
+      // If allocation is marked as idle (e.g., USDS/sUSDS POL), move all value to idleUsdValue
+      if (allocation.isIdle) {
+        idleUsdValue = usdValue + idleUsdValue;
+        usdValue = 0;
+      }
+
       // Calculate yesterday's USD values for change
       const yesterdayBalance = await db
         .select()
@@ -209,9 +215,7 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
         const yesterdayRawBalance = yesterdayBalance[0].balanceData.balance != null
           ? Number(yesterdayBalance[0].balanceData.balance)
           : 0;
-        const yesterdayUsdValue = yesterdayRawBalance * yesterdayPriceUSD;
-
-        usdValueChange = usdValue - yesterdayUsdValue;
+        let yesterdayUsdValue = yesterdayRawBalance * yesterdayPriceUSD;
 
         // Calculate yesterday's idle balance change if applicable
         if (allocation.hasIdle && yesterdayBalance[0].idleAllocationId) {
@@ -240,6 +244,15 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
             idleUsdValueChange = idleUsdValue - yesterdayIdleUsdValue;
           }
         }
+
+        // If allocation is marked as idle (e.g., USDS/sUSDS POL), move all yesterday's value to idleUsdValue as well
+        if (allocation.isIdle) {
+          const yesterdayIdleUsdValue = yesterdayUsdValue + (idleUsdValueChange !== 0 ? (idleUsdValue - idleUsdValueChange) : 0);
+          idleUsdValueChange = idleUsdValue - yesterdayIdleUsdValue;
+          yesterdayUsdValue = 0;
+        }
+
+        usdValueChange = usdValue - yesterdayUsdValue;
       }
 
       // Get underlying token details
@@ -283,7 +296,9 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
         star: allocation.star,
         blockchain: allocation.blockchain,
         type: allocation.type,
-        holdingWallet: allocation.holdingWallet,
+        holdingWallet: allocation.holdingWallet 
+          ? `${allocation.blockchain}:${allocation.holdingWallet}` 
+          : null,
         isYBS: allocation.isYBS,
         isLending: allocation.isLending,
         isLP: allocation.isLP,
@@ -300,7 +315,7 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
       };
 
       // Add idle fields if applicable
-      if (allocation.hasIdle) {
+      if (allocation.hasIdle || allocation.isIdle) {
         enrichedAllocation.idleBalance = String(rawIdleBalance);
         enrichedAllocation.idleUsdValue = round2(idleUsdValue);
         enrichedAllocation.idleUsdValueChange = round2(idleUsdValueChange);

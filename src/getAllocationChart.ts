@@ -168,7 +168,7 @@ export async function craftAllocationChartResponse(
         const rawBalance =
           item.balanceData.balance != null ? Number(item.balanceData.balance) : 0;
 
-        const usdValue = rawBalance * priceUSD;
+        let usdValue = rawBalance * priceUSD;
         let idleUsdValue = 0;
 
         // If this allocation has idle balances, fetch them separately
@@ -200,6 +200,12 @@ export async function craftAllocationChartResponse(
           }
         }
 
+        // If allocation is marked as idle (e.g., USDS/sUSDS POL), move all value to idleUsdValue
+        if (allocation.isIdle) {
+          idleUsdValue = usdValue + idleUsdValue;
+          usdValue = 0;
+        }
+
         if (!byDay[daySK]) {
           byDay[daySK] = { allocations: {}, totals: {} };
         }
@@ -207,7 +213,7 @@ export async function craftAllocationChartResponse(
         const allocationEntry: { usdValue: number; idleUsdValue?: number } = { 
           usdValue: round2(usdValue) 
         };
-        if (allocation.hasIdle) {
+        if (allocation.hasIdle || allocation.isIdle) {
           allocationEntry.idleUsdValue = round2(idleUsdValue);
         }
         byDay[daySK].allocations[allocation.id] = allocationEntry;

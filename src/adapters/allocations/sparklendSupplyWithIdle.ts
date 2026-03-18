@@ -158,10 +158,16 @@ export async function fetchBalance(
   const availableLiquidityScaled = (matchingReserve.availableLiquidity * userBalanceRaw) / totalSupplyRaw;
   const idleBalance = ethers.formatUnits(availableLiquidityScaled, decimals);
 
+  // Active balance = total balance - idle balance
+  const activeBalance = (userBalanceRaw - availableLiquidityScaled);
+  const activeBalanceFormatted = ethers.formatUnits(activeBalance, decimals);
+
   const availableLiquidityFormatted = ethers.formatUnits(matchingReserve.availableLiquidity, decimals);
   console.log(`[${allocation.id}] Pool available liquidity: ${availableLiquidityFormatted}`);
   console.log(`[${allocation.id}] User share: ${(Number(balance) / Number(totalSupply) * 100).toFixed(4)}%`);
-  console.log(`[${allocation.id}] Calculated idle balance: ${idleBalance}`);
+  console.log(`[${allocation.id}] Total balance: ${balance}`);
+  console.log(`[${allocation.id}] Active balance (after subtracting idle): ${activeBalanceFormatted}`);
+  console.log(`[${allocation.id}] Idle balance: ${idleBalance}`);
 
-  return { balance, idleBalance };
+  return { balance: activeBalanceFormatted, idleBalance };
 }

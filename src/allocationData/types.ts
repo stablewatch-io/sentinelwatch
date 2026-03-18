@@ -49,6 +49,8 @@ export type AllocationConfig = {
   isLP?: boolean | null;
   /** True if some portion sits idle (not deployed). */
   hasIdle?: boolean | null;
+  /** True if this entire allocation should be treated as idle (e.g., USDS/sUSDS POL). */
+  isIdle?: boolean | null;
   /** True if this allocation has RRC (Risk Review Committee) oversight. */
   hasRRC?: boolean | null;
   market?: string | null;
