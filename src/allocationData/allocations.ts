@@ -434,6 +434,7 @@ const allocations: AllocationConfig[] = [
     type: "psm3",
     isIdle: true,
     holdingWallet: PSM_ADDRESSES.spark_base,
+    priceOverride: "ethereum:0xC02aB1A5eaA8d1B114EF786D9bde108cD4364359",
   },
   {
     id: "spark-base-psm3-susds-base",
@@ -445,6 +446,7 @@ const allocations: AllocationConfig[] = [
     type: "psm3",
     isIdle: true,
     holdingWallet: PSM_ADDRESSES.spark_base,
+    priceOverride: "ethereum:0xa3931d71877c0e7a3148cb7eb4463524fec27fbd",
   },
   {
     id: "spark-unichain-psm3-usds-unichain",
@@ -456,6 +458,7 @@ const allocations: AllocationConfig[] = [
     type: "psm3",
     isIdle: true,
     holdingWallet: PSM_ADDRESSES.spark_unichain,
+    priceOverride: "ethereum:0xC02aB1A5eaA8d1B114EF786D9bde108cD4364359",
   },
   {
     id: "spark-unichain-psm3-susds-unichain",
@@ -467,6 +470,7 @@ const allocations: AllocationConfig[] = [
     type: "psm3",
     isIdle: true,
     holdingWallet: PSM_ADDRESSES.spark_unichain,
+    priceOverride: "ethereum:0xa3931d71877c0e7a3148cb7eb4463524fec27fbd",
   },
   {
     id: "spark-optimism-psm3-usds-optimism",
@@ -478,6 +482,7 @@ const allocations: AllocationConfig[] = [
     type: "psm3",
     isIdle: true,
     holdingWallet: PSM_ADDRESSES.spark_optimism,
+    priceOverride: "ethereum:0xC02aB1A5eaA8d1B114EF786D9bde108cD4364359",
   },
   {
     id: "spark-optimism-psm3-susds-optimism",
@@ -489,6 +494,7 @@ const allocations: AllocationConfig[] = [
     type: "psm3",
     isIdle: true,
     holdingWallet: PSM_ADDRESSES.spark_optimism,
+    priceOverride: "ethereum:0xa3931d71877c0e7a3148cb7eb4463524fec27fbd",
   },
   {
     id: "spark-arbitrum-psm3-usds-arbitrum",
@@ -500,6 +506,7 @@ const allocations: AllocationConfig[] = [
     type: "psm3",
     isIdle: true,
     holdingWallet: PSM_ADDRESSES.spark_arbitrum,
+    priceOverride: "ethereum:0xC02aB1A5eaA8d1B114EF786D9bde108cD4364359",
   },
   {
     id: "spark-arbitrum-psm3-susds-arbitrum",
@@ -511,6 +518,7 @@ const allocations: AllocationConfig[] = [
     type: "psm3",
     isIdle: true,
     holdingWallet: PSM_ADDRESSES.spark_arbitrum,
+    priceOverride: "ethereum:0xa3931d71877c0e7a3148cb7eb4463524fec27fbd",
   },
   // -------------------------------------------------------------------------
   // Grove - Allocations
