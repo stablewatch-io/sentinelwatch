@@ -338,8 +338,8 @@ async function syncAllocations(): Promise<{
         created++;
         
         // Rate limit: GitHub GraphQL allows ~5000 requests/hour
-        // Add small delay to avoid hitting secondary rate limits
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Add small delay to avoid hitting secondary rate limits (100ms = ~600 req/min)
+        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(`  ✗ ${categoryName} — failed: ${message}`);
