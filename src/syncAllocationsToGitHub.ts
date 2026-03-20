@@ -25,7 +25,6 @@ if (!GITHUB_TOKEN) {
 const DISCUSSION_CATEGORIES = [
   "Risk Analysis",
   "Settle",
-  "Upcoming",
 ] as const;
 
 type GitHubDiscussion = {
@@ -181,9 +180,6 @@ function createDiscussionBody(
       break;
     case "Settle":
       categoryIntro = "Discuss settlement processes, execution plans, and operational details for this allocation.";
-      break;
-    case "Upcoming":
-      categoryIntro = "Discuss upcoming changes, planned updates, and future considerations for this allocation.";
       break;
   }
 
