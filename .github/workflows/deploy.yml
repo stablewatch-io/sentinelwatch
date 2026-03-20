@@ -48,7 +48,7 @@ jobs:
           LINEA_RPC_URL:         ${{ secrets.LINEA_RPC_URL }}
           CELO_RPC_URL:          ${{ secrets.CELO_RPC_URL }}
           BINANCE_RPC_URL:       ${{ secrets.BINANCE_RPC_URL }}
-          GITHUB_TOKEN:          ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN:          ${{ secrets.WORKSPACE_GITHUB_TOKEN }}
 
       - name: Seed initial data
         run: |
