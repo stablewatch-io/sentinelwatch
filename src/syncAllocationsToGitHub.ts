@@ -10,7 +10,7 @@
  */
 
 import type { APIGatewayProxyHandler } from "aws-lambda";
-import { allocations } from "./allocationData/allocations";
+import allocations from "./allocationData/allocations";
 import { isActiveAllocation } from "./allocationData/types";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
