@@ -57,6 +57,7 @@ provider:
     CELO_RPC_URL: ${env:CELO_RPC_URL, ""}
     UNICHAIN_RPC_URL: ${env:UNICHAIN_RPC_URL, ""}
     MONAD_RPC_URL: ${env:MONAD_RPC_URL, ""}
+    GITHUB_TOKEN: ${env:GITHUB_TOKEN, ""}
 
 custom:
   stage: ${opt:stage, self:provider.stage}
@@ -184,6 +185,15 @@ functions:
     memorySize: 256
     events:
       - schedule: cron(0 1 * * ? *) # Daily at 01:00 UTC
+
+  syncAllocationsToGitHub:
+    handler: src/syncAllocationsToGitHub.default
+    timeout: 60
+    memorySize: 256
+    events:
+      - http:
+          path: syncallocationstogithub
+          method: post
 
 resources:
   # CORS headers on API Gateway error responses (4xx / 5xx)
