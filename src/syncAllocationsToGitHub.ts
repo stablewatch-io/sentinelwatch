@@ -316,8 +316,10 @@ async function syncAllocations(): Promise<{
   let created = 0;
   let existing = 0;
 
+  let processedCount = 0;
   for (const allocation of activeAllocations) {
-    console.log(`\n[${allocation.id}]`);
+    processedCount++;
+    console.log(`\n[${processedCount}/${activeAllocations.length}] ${allocation.id}`);
     
     for (const categoryName of DISCUSSION_CATEGORIES) {
       const categoryId = categoryMap.get(categoryName)!;
@@ -340,9 +342,16 @@ async function syncAllocations(): Promise<{
         const message = err instanceof Error ? err.message : String(err);
         console.error(`  ✗ ${categoryName} — failed: ${message}`);
         errors.push(`${allocation.id} [${categoryName}]: ${message}`);
+        
+        // Log full error for debugging
+        if (err instanceof Error && err.stack) {
+          console.error(`     Stack: ${err.stack}`);
+        }
       }
     }
   }
+  
+  console.log(`\n✓ Finished processing ${processedCount} allocations`);
 
   const expectedTotal = activeAllocations.length * DISCUSSION_CATEGORIES.length;
 

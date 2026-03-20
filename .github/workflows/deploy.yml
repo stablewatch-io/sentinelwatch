@@ -62,7 +62,16 @@ jobs:
 
       - name: Sync allocations to GitHub workspace
         run: |
-          aws lambda invoke --function-name sentinelwatch-prod-syncAllocationsToGitHub /dev/null
+          aws lambda invoke \
+            --function-name sentinelwatch-prod-syncAllocationsToGitHub \
+            --invocation-type RequestResponse \
+            --log-type Tail \
+            --cli-read-timeout 320 \
+            --cli-connect-timeout 60 \
+            response.json
+          echo "Sync response:"
+          cat response.json
+          rm response.json
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
