@@ -285,7 +285,7 @@ const allocations: AllocationConfig[] = [
     protocol: "sky",
     star: "Spark",
     blockchain: "ethereum",
-    type: "pol",
+    type: "external-pol",   // origin of these assets is Spark Liquidity Layer (SLL)
     isIdle: true,
     holdingWallet: ALM_ADDRESSES.spark_ethereum,
   },
