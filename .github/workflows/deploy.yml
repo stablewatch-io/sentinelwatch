@@ -54,7 +54,11 @@ jobs:
         run: |
           aws lambda invoke --function-name sentinelwatch-prod-storeAllocationPrices /dev/null
           aws lambda invoke --function-name sentinelwatch-prod-storeAllocationBalances /dev/null
-          aws lambda invoke --function-name sentinelwatch-prod-storeBlockAnalyticaAllocationsSnapshot /dev/null
+          aws lambda invoke \
+            --function-name sentinelwatch-prod-storeBlockAnalyticaAllocationsSnapshot \
+            --invocation-type RequestResponse \
+            --cli-read-timeout 120 \
+            /dev/null
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
