@@ -42,6 +42,7 @@ jobs:
           OPTIMISM_RPC_URL:      ${{ secrets.OPTIMISM_RPC_URL }}
           ARBITRUM_RPC_URL:      ${{ secrets.ARBITRUM_RPC_URL }}
           UNICHAIN_RPC_URL:      ${{ secrets.UNICHAIN_RPC_URL }}
+          MONAD_RPC_URL:         ${{ secrets.MONAD_RPC_URL }}
           POLYGON_RPC_URL:       ${{ secrets.POLYGON_RPC_URL }}
           SONIC_RPC_URL:         ${{ secrets.SONIC_RPC_URL }}
           GNOSIS_RPC_URL:        ${{ secrets.GNOSIS_RPC_URL }}
