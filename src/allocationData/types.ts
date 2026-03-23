@@ -53,6 +53,8 @@ export type AllocationConfig = {
   isIdle?: boolean | null;
   /** True if this allocation has RRC (Risk Review Committee) oversight. */
   hasRRC?: boolean | null;
+  /** False to disable this allocation from all API responses and processing. Defaults to true. */
+  isActive?: boolean | null;
   market?: string | null;
   /**
    * For Uniswap V3 LP positions: the pool address.
@@ -87,7 +89,11 @@ export type AllocationConfig = {
  */
 export type ActiveAllocation = AllocationConfig & { underlying: string };
 
-/** Runtime type-guard — filters out entries with no underlying token set. */
+/** Runtime type-guard — filters out entries with no underlying token set or isActive=false. */
 export function isActiveAllocation(a: AllocationConfig): a is ActiveAllocation {
-  return typeof a.underlying === "string" && a.underlying.length > 0;
+  return (
+    typeof a.underlying === "string" && 
+    a.underlying.length > 0 &&
+    a.isActive !== false
+  );
 }

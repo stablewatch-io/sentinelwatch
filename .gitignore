@@ -6,6 +6,7 @@ imported-db
 docker
 .DS_Store
 .esbuild
+cli-output
 src/utils/imports/adapters.ts
 src/adapters/peggedAssets/addNewPeggedChecklist.md
 src/adapters/peggedAssets/storeCoinGeckoHistory.ts

@@ -139,6 +139,13 @@ export const tokens: Record<string, Token> = {
     address:    "0x56A76b428244a50513ec81e225a293d128fd581D",
     decimals:   18,
   },
+  "ethereum:0x23878914EFE38d27C4D67Ab83ed1b93A74D4086a": {
+    id:         "ethereum:0x23878914EFE38d27C4D67Ab83ed1b93A74D4086a",
+    name:       "Aave aUSDT",
+    blockchain: "ethereum",
+    address:    "0x23878914EFE38d27C4D67Ab83ed1b93A74D4086a",
+    decimals:   6,
+  },
   "avalanche:0x625e7708f30ca75bfd92586e17077590c60eb4cd": {
     id:         "avalanche:0x625e7708f30ca75bfd92586e17077590c60eb4cd",
     name:       "Aave Avalanche USDC",
