@@ -663,10 +663,10 @@ async function main() {
     console.log("=".repeat(80) + "\n");
 
     const allResponseEntries = await fetchBackendEntries();
-    const responseEntries = allResponseEntries.filter((e) => parseFloat(e.assets) >= 10_000);
+    const responseEntries = allResponseEntries.filter((e) => parseFloat(e.allocated_assets) >= 10_000);
     console.log(
       `✓ Fetched ${allResponseEntries.length} entries from Block Analytica` +
-      ` (${allResponseEntries.length - responseEntries.length} filtered out with assets < $10,000)\n`
+      ` (${allResponseEntries.length - responseEntries.length} filtered out with allocated_assets < $10,000)\n`
     );
 
     const { results, unmatchedChartEntries } = validateAgainstBackend(details, responseEntries);

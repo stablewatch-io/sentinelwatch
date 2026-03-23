@@ -206,13 +206,12 @@ export async function runValidation(): Promise<any> {
   const snapshot = latestSnapshot[0];
   const allResponseEntries = snapshot.responseData.data.results;
 
-  // Filter allocations with allocated_assets >= 1000
+  // Filter out entries with negligible allocated_assets (< $10,000) — same threshold as CLI
   const responseEntries = allResponseEntries.filter((entry: any) => {
-    const allocatedAssets = parseFloat(entry.allocated_assets);
-    return allocatedAssets >= 1000;
+    return parseFloat(entry.allocated_assets) >= 10_000;
   });
 
-  console.log(`Loaded ${responseEntries.length} Block Analytica entries (filtered >= 1000)`);
+  console.log(`Loaded ${responseEntries.length} Block Analytica entries (filtered allocated_assets >= $10,000, was ${allResponseEntries.length})`);
 
   // Build allocation mapping
   const mapping = buildAllocationMapping();
