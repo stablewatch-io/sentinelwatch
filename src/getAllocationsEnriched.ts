@@ -35,6 +35,7 @@ import { eq, and, desc, lt } from "drizzle-orm";
 import { getClosestDayStartTimestamp, secondsInHour, secondsInDay } from "./utils/date";
 import allocations from "./allocationData/allocations";
 import { isActiveAllocation } from "./allocationData/types";
+import type { AllocationCategory } from "./allocationData/types";
 import { tokens } from "./allocationData/tokens";
 
 function round2(n: number) {
@@ -181,6 +182,7 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
     hasRRC?: boolean | null;
     market?: string | null;
     startDate?: string | null;
+    category?: AllocationCategory[] | null;
     underlying: {
       id: string;
       name: string;
@@ -342,6 +344,7 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
         hasRRC: allocation.hasRRC,
         market: allocation.market,
         startDate: allocation.startDate,
+        category: allocation.category,
         underlying: underlyingInfo,
         balance: String(rawBalance),
         price: priceUSD,

@@ -1,3 +1,18 @@
+export const ALLOCATION_CATEGORIES = [
+  "crypto_collateralized",
+  "crypto_lp",
+  "pol",
+  "rwa_clo",
+  "mixed_strategies",
+  "decentralized_lending",
+  "centralized_lending",
+  "rwa_treasury_fund",
+  "defi_clo",
+  "delta_neutral",
+] as const;
+
+export type AllocationCategory = typeof ALLOCATION_CATEGORIES[number];
+
 /**
  * AllocationConfig — the raw shape of each entry in allocations.ts.
  *
@@ -81,6 +96,8 @@ export type AllocationConfig = {
    * (e.g., use Ethereum USDS price for USDS on all chains).
    */
   priceOverride?: string | null;
+  /** One or more strategy categories this allocation belongs to. */
+  category?: AllocationCategory[] | null;
 };
 
 /**
