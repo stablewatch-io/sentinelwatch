@@ -41,6 +41,73 @@ function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
 
+/**
+ * Fetches the daily balance + idle balance for an allocation at a specific
+ * day-start timestamp and returns the computed USD values.
+ * Returns null for both values when no record exists at that timestamp.
+ */
+async function fetchHistoricalUsdValues(
+  allocationId: string,
+  targetDayStart: number,
+  pricesMap: Record<string, number>,
+  priceKey: string,
+  hasIdle: boolean | null | undefined,
+  isIdle: boolean | null | undefined,
+): Promise<{ usdValue: number | null; idleUsdValue: number | null }> {
+  const pastBalance = await db
+    .select()
+    .from(allocationBalances)
+    .where(
+      and(
+        eq(allocationBalances.allocationId, allocationId),
+        eq(allocationBalances.granularity, "daily"),
+        eq(allocationBalances.timestamp, targetDayStart)
+      )
+    )
+    .limit(1);
+
+  if (pastBalance.length === 0) return { usdValue: null, idleUsdValue: null };
+
+  const priceUSD = pricesMap[priceKey] ?? 0;
+  const rawBalance = pastBalance[0].balanceData.balance != null
+    ? Number(pastBalance[0].balanceData.balance)
+    : 0;
+  let usdValue = rawBalance * priceUSD;
+  let idleUsdValue: number | null = null;
+
+  if (hasIdle && pastBalance[0].idleAllocationId) {
+    const idleId = pastBalance[0].idleAllocationId;
+    const idlePriceKey = `${priceKey}-idle`;
+    const idlePriceUSD = pricesMap[idlePriceKey] ?? 0;
+
+    const pastIdleBalance = await db
+      .select()
+      .from(allocationBalances)
+      .where(
+        and(
+          eq(allocationBalances.allocationId, idleId),
+          eq(allocationBalances.granularity, "daily"),
+          eq(allocationBalances.timestamp, targetDayStart)
+        )
+      )
+      .limit(1);
+
+    if (pastIdleBalance.length > 0) {
+      const rawIdleBalance = pastIdleBalance[0].balanceData.balance != null
+        ? Number(pastIdleBalance[0].balanceData.balance)
+        : 0;
+      idleUsdValue = rawIdleBalance * idlePriceUSD;
+    }
+  }
+
+  if (isIdle) {
+    idleUsdValue = usdValue + (idleUsdValue ?? 0);
+    usdValue = 0;
+  }
+
+  return { usdValue, idleUsdValue };
+}
+
 export async function craftAllocationsEnrichedResponse(): Promise<any> {
   const visible = allocations.filter(isActiveAllocation);
 
@@ -68,23 +135,33 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
 
   const prices = (latestPrice.prices as Record<string, number>) ?? {};
 
-  // ----- Load yesterday's prices for change calculation -----
+  // ----- Load historical prices for change calculations (1d / 7d / 30d) -----
   const todayDayStart = getClosestDayStartTimestamp(latestPrice.timestamp);
   const yesterdayDayStart = todayDayStart - secondsInDay;
+  const sevenDayStart    = todayDayStart - 7  * secondsInDay;
+  const thirtyDayStart   = todayDayStart - 30 * secondsInDay;
 
-  const yesterdayPrices = await db
-    .select()
-    .from(tokenPrices)
-    .where(
-      and(
-        eq(tokenPrices.granularity, "daily"),
-        eq(tokenPrices.timestamp, yesterdayDayStart)
-      )
-    )
-    .limit(1);
+  const fetchPricesAt = (timestamp: number) =>
+    db
+      .select()
+      .from(tokenPrices)
+      .where(and(eq(tokenPrices.granularity, "daily"), eq(tokenPrices.timestamp, timestamp)))
+      .limit(1);
 
-  const yesterdayPricesMap = yesterdayPrices.length > 0 
-    ? (yesterdayPrices[0].prices as Record<string, number>) 
+  const [yesterdayPrices, sevenDayPrices, thirtyDayPrices] = await Promise.all([
+    fetchPricesAt(yesterdayDayStart),
+    fetchPricesAt(sevenDayStart),
+    fetchPricesAt(thirtyDayStart),
+  ]);
+
+  const yesterdayPricesMap = yesterdayPrices.length > 0
+    ? (yesterdayPrices[0].prices as Record<string, number>)
+    : {};
+  const sevenDayPricesMap = sevenDayPrices.length > 0
+    ? (sevenDayPrices[0].prices as Record<string, number>)
+    : {};
+  const thirtyDayPricesMap = thirtyDayPrices.length > 0
+    ? (thirtyDayPrices[0].prices as Record<string, number>)
     : {};
 
   // ----- Aggregate latest balances with enriched data -----
@@ -116,9 +193,13 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
     price: number;
     usdValue: number;
     usdValueChange: number;
+    usdValueChange7d: number | null;
+    usdValueChange30d: number | null;
     idleBalance?: string;
     idleUsdValue?: number;
     idleUsdValueChange?: number;
+    idleUsdValueChange7d?: number | null;
+    idleUsdValueChange30d?: number | null;
   };
 
   const enrichedAllocations: EnrichedAllocation[] = [];
@@ -194,66 +275,20 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
         usdValue = 0;
       }
 
-      // Calculate yesterday's USD values for change
-      const yesterdayBalance = await db
-        .select()
-        .from(allocationBalances)
-        .where(
-          and(
-            eq(allocationBalances.allocationId, allocation.id),
-            eq(allocationBalances.granularity, "daily"),
-            eq(allocationBalances.timestamp, yesterdayDayStart)
-          )
-        )
-        .limit(1);
+      // Calculate historical USD values for 1d / 7d / 30d change
+      const [past1d, past7d, past30d] = await Promise.all([
+        fetchHistoricalUsdValues(allocation.id, yesterdayDayStart, yesterdayPricesMap, priceKey, allocation.hasIdle, allocation.isIdle),
+        fetchHistoricalUsdValues(allocation.id, sevenDayStart,    sevenDayPricesMap,    priceKey, allocation.hasIdle, allocation.isIdle),
+        fetchHistoricalUsdValues(allocation.id, thirtyDayStart,   thirtyDayPricesMap,   priceKey, allocation.hasIdle, allocation.isIdle),
+      ]);
 
-      let usdValueChange = 0;
-      let idleUsdValueChange = 0;
-      
-      if (yesterdayBalance.length > 0) {
-        const yesterdayPriceUSD = yesterdayPricesMap[priceKey] ?? 0;
-        const yesterdayRawBalance = yesterdayBalance[0].balanceData.balance != null
-          ? Number(yesterdayBalance[0].balanceData.balance)
-          : 0;
-        let yesterdayUsdValue = yesterdayRawBalance * yesterdayPriceUSD;
+      const usdValueChange     = past1d.usdValue  !== null ? round2(usdValue - past1d.usdValue)  : 0;
+      const usdValueChange7d   = past7d.usdValue  !== null ? round2(usdValue - past7d.usdValue)  : null;
+      const usdValueChange30d  = past30d.usdValue !== null ? round2(usdValue - past30d.usdValue) : null;
 
-        // Calculate yesterday's idle balance change if applicable
-        if (allocation.hasIdle && yesterdayBalance[0].idleAllocationId) {
-          const yesterdayIdleId = yesterdayBalance[0].idleAllocationId;
-          const yesterdayIdleBalance = await db
-            .select()
-            .from(allocationBalances)
-            .where(
-              and(
-                eq(allocationBalances.allocationId, yesterdayIdleId),
-                eq(allocationBalances.granularity, "daily"),
-                eq(allocationBalances.timestamp, yesterdayDayStart)
-              )
-            )
-            .limit(1);
-
-          if (yesterdayIdleBalance.length > 0) {
-            const idlePriceKey = `${priceKey}-idle`;
-            const yesterdayIdlePriceUSD = yesterdayPricesMap[idlePriceKey] ?? 0;
-            const yesterdayRawIdleBalance =
-              yesterdayIdleBalance[0].balanceData.balance != null
-                ? Number(yesterdayIdleBalance[0].balanceData.balance)
-                : 0;
-
-            const yesterdayIdleUsdValue = yesterdayRawIdleBalance * yesterdayIdlePriceUSD;
-            idleUsdValueChange = idleUsdValue - yesterdayIdleUsdValue;
-          }
-        }
-
-        // If allocation is marked as idle (e.g., USDS/sUSDS POL), move all yesterday's value to idleUsdValue as well
-        if (allocation.isIdle) {
-          const yesterdayIdleUsdValue = yesterdayUsdValue + (idleUsdValueChange !== 0 ? (idleUsdValue - idleUsdValueChange) : 0);
-          idleUsdValueChange = idleUsdValue - yesterdayIdleUsdValue;
-          yesterdayUsdValue = 0;
-        }
-
-        usdValueChange = usdValue - yesterdayUsdValue;
-      }
+      const idleUsdValueChange    = past1d.idleUsdValue  !== null ? round2(idleUsdValue - past1d.idleUsdValue)  : 0;
+      const idleUsdValueChange7d  = past7d.idleUsdValue  !== null ? round2(idleUsdValue - past7d.idleUsdValue)  : null;
+      const idleUsdValueChange30d = past30d.idleUsdValue !== null ? round2(idleUsdValue - past30d.idleUsdValue) : null;
 
       // Get underlying token details
       const underlyingToken = tokens[allocation.underlying];
@@ -311,14 +346,18 @@ export async function craftAllocationsEnrichedResponse(): Promise<any> {
         balance: String(rawBalance),
         price: priceUSD,
         usdValue: round2(usdValue),
-        usdValueChange: round2(usdValueChange),
+        usdValueChange,
+        usdValueChange7d,
+        usdValueChange30d,
       };
 
       // Add idle fields if applicable
       if (allocation.hasIdle || allocation.isIdle) {
         enrichedAllocation.idleBalance = String(rawIdleBalance);
         enrichedAllocation.idleUsdValue = round2(idleUsdValue);
-        enrichedAllocation.idleUsdValueChange = round2(idleUsdValueChange);
+        enrichedAllocation.idleUsdValueChange = idleUsdValueChange;
+        enrichedAllocation.idleUsdValueChange7d = idleUsdValueChange7d;
+        enrichedAllocation.idleUsdValueChange30d = idleUsdValueChange30d;
       }
 
       enrichedAllocations.push(enrichedAllocation);
